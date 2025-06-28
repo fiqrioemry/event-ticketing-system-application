@@ -14,11 +14,11 @@ func InitRoutes(r *gin.Engine, h *handlers.Handlers) {
 	UserRoutes(api, h.UserHandler)
 	OrderRoutes(api, h.OrderHandler)
 	EventRoutes(api, h.EventHandler)
+	PaymentRoutes(api, h.PaymentHandler)
+	TicketRoutes(api, h.TicketHandler)
+	ReportRoutes(api, h.ReportHandler)
+	WithdrawalRoutes(api, h.WithdrawalHandler)
+
+	UserTicketRoutes(api, h.UserTicketHandler)
 
 }
-
-// TicketRoutes(api, h.TicketHandler)
-// ReportRoutes(api, h.ReportHandler)
-// WithdrawalRoutes(api, h.WithdrawalHandler)
-// PaymentRoutes(api, h.PaymentHandler)
-// UserTicketRoutes(api, h.UserTicketHandler)
