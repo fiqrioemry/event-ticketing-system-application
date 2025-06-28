@@ -46,7 +46,7 @@ func (r *paymentRepository) UpdatePayment(payment *models.Payment) error {
 }
 
 func (r *paymentRepository) ExpireOldPendingPayments() (int64, error) {
-	threshold := time.Now().Add(-15 * time.Minute)
+	threshold := time.Now().Add(-5 * time.Minute)
 
 	var payments []models.Payment
 
