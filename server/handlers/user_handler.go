@@ -18,7 +18,7 @@ func NewUserHandler(service services.UserService) *UserHandler {
 }
 
 func (h *UserHandler) GetMyProfile(c *gin.Context) {
-	userID := c.Param("id")
+	userID := utils.MustGetUserID(c)
 
 	response, err := h.service.GetUserProfile(userID)
 	if err != nil {
@@ -36,7 +36,15 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
+	avatarURL, err := utils.UploadImageWithValidation(req.Avatar)
+	if err != nil {
+		utils.HandleServiceError(c, err, err.Error())
+		return
+	}
+	req.AvatarURL = avatarURL
+
 	if err := h.service.UpdateUserDetail(userID, &req); err != nil {
+		utils.CleanupImageOnError(avatarURL)
 		utils.HandleServiceError(c, err, err.Error())
 		return
 	}
