@@ -1,0 +1,1097 @@
+{
+	"info": {
+		"_postman_id": "971ee111-be00-4bbd-a355-4c7dd27db8b3",
+		"name": "Event Ticketing Application API",
+		"description": "**Event Ticketing Application API** is a robust RESTful backend service that powers the digital management of event ticket sales. It simplifies the end-to-end process, enabling seamless user registration, efficient event setup by administrators, and a secure, user-friendly experience for purchasing and paying for tickets.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39450267",
+		"_collection_link": "https://test99-3397.postman.co/workspace/fitness_booking_app~129e8344-0751-4fda-9364-204b522c762f/collection/39450267-971ee111-be00-4bbd-a355-4c7dd27db8b3?action=share&source=collection_link&creator=39450267"
+	},
+	"item": [
+		{
+			"name": "authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/login",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Authenticate user using email and password. Returns access and refresh token."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/logout",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Invalidate the current user's access token."
+					},
+					"response": []
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"newpassword\",\n  \"fullname\": \"New User\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/register",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a new user with email, password, and full name."
+					},
+					"response": []
+				},
+				{
+					"name": "Send OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/send-otp",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"send-otp"
+							]
+						},
+						"description": "Send an OTP code to user's email for verification or password recovery."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/verify-otp",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"verify-otp"
+							]
+						},
+						"description": "Verify the OTP code received by the user via email."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/auth/refresh-token",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"refresh-token"
+							]
+						},
+						"description": "Refresh the expired access token using a valid refresh token."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "user",
+			"item": [
+				{
+					"name": "Get My Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/user/me",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"me"
+							]
+						},
+						"description": "Get the profile information of the currently authenticated user."
+					},
+					"response": []
+				},
+				{
+					"name": "Update My Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullname\": \"Updated Name\",\n  \"avatarURL\": \"https://example.com/avatar.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/me",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"me"
+							]
+						},
+						"description": "Update the current user's profile including full name and optional avatar URL."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/user?page=1&limit=10",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Admin only: Get a paginated list of users with optional filters."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Detail (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/user/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Admin only: Retrieve detailed information of a specific user by ID."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "event",
+			"item": [
+				{
+					"name": "Get All Events",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/events",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"events"
+							]
+						},
+						"description": "Retrieve a paginated list of all available events with optional filters."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Event Detail",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/events/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"events",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Retrieve detailed information about a specific event by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tickets By Event ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/events/:id/tickets",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"events",
+								":id",
+								"tickets"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Retrieve ticket information associated with a specific event."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Event (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "title",
+									"value": "Sample Event",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Event description here",
+									"type": "text"
+								},
+								{
+									"key": "location",
+									"value": "Jakarta",
+									"type": "text"
+								},
+								{
+									"key": "date",
+									"value": "2025-08-01",
+									"type": "text"
+								},
+								{
+									"key": "startTime",
+									"value": "10",
+									"type": "text"
+								},
+								{
+									"key": "endTime",
+									"value": "14",
+									"type": "text"
+								},
+								{
+									"key": "status",
+									"value": "active",
+									"type": "text"
+								},
+								{
+									"key": "tickets[0].name",
+									"value": "Regular",
+									"type": "text"
+								},
+								{
+									"key": "tickets[0].eventId",
+									"value": "event-id-placeholder",
+									"type": "text"
+								},
+								{
+									"key": "tickets[0].price",
+									"value": "50000",
+									"type": "text"
+								},
+								{
+									"key": "tickets[0].quota",
+									"value": "100",
+									"type": "text"
+								},
+								{
+									"key": "tickets[0].limit",
+									"value": "2",
+									"type": "text"
+								},
+								{
+									"key": "tickets[0].sold",
+									"value": "0",
+									"type": "text"
+								},
+								{
+									"key": "tickets[0].isRefundable",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "tickets[1].name",
+									"value": "Regular",
+									"type": "text"
+								},
+								{
+									"key": "tickets[1].eventId",
+									"value": "event-id-placeholder",
+									"type": "text"
+								},
+								{
+									"key": "tickets[1].price",
+									"value": "50000",
+									"type": "text"
+								},
+								{
+									"key": "tickets[1].quota",
+									"value": "100",
+									"type": "text"
+								},
+								{
+									"key": "tickets[1].limit",
+									"value": "2",
+									"type": "text"
+								},
+								{
+									"key": "tickets[1].sold",
+									"value": "0",
+									"type": "text"
+								},
+								{
+									"key": "tickets[1].isRefundable",
+									"value": "true",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/events",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"events"
+							]
+						},
+						"description": "Create a new event using multipart/form-data request."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Event (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Event\",\n  \"description\": \"Updated description\",\n  \"location\": \"Bandung\",\n  \"date\": \"2025-08-01\",\n  \"startTime\": 10,\n  \"endTime\": 14,\n  \"status\": \"active\",\n  \"ticketCategories\": [\n    {\n      \"id\": \"ticket-id-placeholder\",\n      \"name\": \"VIP\",\n      \"price\": 150000,\n      \"quota\": 50,\n      \"isRefundable\": true,\n      \"refundAmount\": 50000\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/events/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"events",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Admin only: Update details of an existing event and its ticket categories."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Event (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/events/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"events",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Admin only: Permanently delete an event by ID."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "order",
+			"item": [
+				{
+					"name": "Create New Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"eventId\": \"event-id-placeholder\",\n  \"fullname\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"081234567890\",\n  \"orderDetails\": [\n    {\n      \"ticketId\": \"ticket-id-placeholder\",\n      \"quantity\": 2\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/orders",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"orders"
+							]
+						},
+						"description": "Create a new order with customer information and selected tickets."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All My Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/orders?page=1&limit=10",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"orders"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Retrieve a paginated list of orders made by the authenticated user."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order Detail By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/orders/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"orders",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Retrieve detailed information about a specific order using its ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Tickets By Order",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/orders/:id/user-tickets",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"orders",
+								":id",
+								"user-tickets"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Get all user tickets related to a specific order. Useful for displaying QR codes and statuses."
+					},
+					"response": []
+				},
+				{
+					"name": "Request Refund for Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Saya ingin refund karena event dibatalkan.\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/orders/:id/refund",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"orders",
+								":id",
+								"refund"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Submit a refund request for a specific order. Only applicable if conditions are met."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "ticket",
+			"item": [
+				{
+					"name": "Get Ticket by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/tickets/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"tickets",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Retrieve ticket details by its ID. Used for reference, may be deprecated later."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Ticket (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"VIP Ticket\",\n  \"eventId\": \"event-id-placeholder\",\n  \"price\": 100000,\n  \"quota\": 100,\n  \"limit\": 2,\n  \"sold\": 0,\n  \"isRefundable\": true\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/tickets",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Admin only: Create a new ticket for a specific event."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Ticket (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Ticket\",\n  \"eventId\": \"ddaf8eb0-a68e-4316-8dc7-834d183faaf6\",\n  \"price\": 444444,\n  \"quota\": 150,\n  \"limit\": 3,\n  \"isRefundable\": false\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/tickets/dcb04519-ab43-4a26-8344-53e50d4b64b2",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"tickets",
+								"dcb04519-ab43-4a26-8344-53e50d4b64b2"
+							]
+						},
+						"description": "Admin only: Update details of a specific ticket."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Ticket (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/tickets/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"tickets",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Admin only: Delete a ticket from the system by ID."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "withdrawal",
+			"item": [
+				{
+					"name": "Request Withdrawal (User)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 150000,\n  \"reason\": \"Penarikan saldo hasil refund\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/withdrawals",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"withdrawals"
+							]
+						},
+						"description": "User can request a withdrawal of their available balance by specifying amount and reason."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Withdrawal Requests (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/withdrawals",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"withdrawals"
+							]
+						},
+						"description": "Admin only: Retrieve all withdrawal requests submitted by users."
+					},
+					"response": []
+				},
+				{
+					"name": "Review Withdrawal Request (Admin)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"approved\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/withdrawals/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"withdrawals",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Admin only: Review and update the status of a withdrawal request (approved or rejected)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "report",
+			"item": [
+				{
+					"name": "Get Transaction Summary",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 150000,\n  \"reason\": \"Penarikan saldo hasil refund\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/reports/transaction",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"reports",
+								"transaction"
+							]
+						},
+						"description": "User can request a withdrawal of their available balance by specifying amount and reason."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Transaction Detail by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/reports/transaction/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"reports",
+								"transaction",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Admin only: Get a transaction report detail by order ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Export Transactions to CSV",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-KEY",
+								"value": "{{API_KEY}}"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/reports/transaction/export?startDate=2025-06-01&endDate=2025-06-30",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"reports",
+								"transaction",
+								"export"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2025-06-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2025-06-30"
+								}
+							]
+						},
+						"description": "Admin only: Export transaction reports into CSV with optional date filtering."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
