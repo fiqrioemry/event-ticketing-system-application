@@ -36,6 +36,7 @@ func (r *userTicketRepository) GetUserTicketsByOrderID(orderID string) ([]models
 		Where("order_details.order_id = ?", orderID).
 		Group("user_tickets.id").
 		Preload("Event").
+		Preload("Ticket").
 		Find(&userTickets).Error
 
 	return userTickets, err
