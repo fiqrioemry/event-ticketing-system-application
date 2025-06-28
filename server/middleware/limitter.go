@@ -3,9 +3,9 @@ package middleware
 import (
 	"fmt"
 	"net/http"
-	"server/internal/config"
-	customErr "server/pkg/errors"
-	"server/pkg/utils"
+	"server/config"
+	customErr "server/errors"
+	"server/utils"
 	"strings"
 	"time"
 

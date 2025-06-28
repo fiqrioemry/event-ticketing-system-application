@@ -3,7 +3,6 @@ package services
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"server/models"
 	"server/repositories"
 	"time"
@@ -19,15 +18,17 @@ type PaymentService interface {
 type paymentService struct {
 	repo       repositories.PaymentRepository
 	order      repositories.OrderRepository
+	ticket     repositories.TicketRepository
 	userTicket repositories.UserTicketRepository
 }
 
-func NewPaymentService(repo repositories.PaymentRepository, order repositories.OrderRepository, userTicket repositories.UserTicketRepository) PaymentService {
-	return &paymentService{repo, order, userTicket}
+func NewPaymentService(repo repositories.PaymentRepository, order repositories.OrderRepository, ticket repositories.TicketRepository, userTicket repositories.UserTicketRepository) PaymentService {
+	return &paymentService{repo, order, ticket, userTicket}
 }
 
 // ** khusus cron job update status to failed
 func (s *paymentService) ExpireOldPendingPayments() error {
+
 	rows, err := s.repo.ExpireOldPendingPayments()
 	if err != nil {
 		return fmt.Errorf("failed to expire pending payments: %w", err)
@@ -50,9 +51,7 @@ func (s *paymentService) StripeWebhookNotification(event stripe.Event) error {
 	}
 
 	paymentID, ok := session.Metadata["payment_id"]
-	log.Println("Error expiring payments:", session.Metadata)
-	log.Printf("Webhook metadata: %+v\n", session.Metadata)
-	log.Printf("Webhook event: %s, payment_id: %s\n", event.Type, paymentID)
+
 	if !ok || paymentID == "" {
 		return fmt.Errorf("missing order_id in Stripe metadata")
 	}
@@ -92,6 +91,20 @@ func (s *paymentService) StripeWebhookNotification(event stripe.Event) error {
 	orderDetails, err := s.order.GetOrderDetails(order.ID.String())
 	if err != nil {
 		return fmt.Errorf("failed to fetch order details: %w", err)
+	}
+
+	// Tambahkan logika update ticket.sold
+	for _, detail := range orderDetails {
+		ticket, err := s.ticket.GetTicketByID(detail.TicketID.String())
+		if err != nil || ticket == nil {
+			return fmt.Errorf("failed to fetch ticket: %w", err)
+		}
+
+		ticket.Sold += detail.Quantity
+
+		if err := s.ticket.UpdateTicket(ticket); err != nil {
+			return fmt.Errorf("failed to update ticket sold count: %w", err)
+		}
 	}
 
 	for _, detail := range orderDetails {

@@ -84,7 +84,6 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 			}
 
 			ticket.Quota -= item.Quantity
-			ticket.Sold += item.Quantity
 			if err := tx.Save(ticket).Error; err != nil {
 				return "", customErr.NewInternal("failed to update ticket quota", err)
 			}
@@ -220,19 +219,9 @@ func (s *orderService) GetOrderDetail(orderID string) ([]dto.OrderDetailResponse
 }
 
 func (s *orderService) GetUserTicketsByOrderID(orderID string) ([]dto.UserTicketResponse, error) {
-	orderDetails, err := s.repo.GetOrderDetails(orderID)
-	if err != nil {
-		return nil, customErr.NewNotFound("order not found")
-	}
-
 	userTickets, err := s.userTicket.GetUserTicketsByOrderID(orderID)
 	if err != nil {
 		return nil, customErr.NewInternal("failed to get user tickets", err)
-	}
-
-	ticketNameMap := map[string]string{}
-	for _, d := range orderDetails {
-		ticketNameMap[d.TicketID.String()] = d.TicketName
 	}
 
 	var result []dto.UserTicketResponse
@@ -242,7 +231,7 @@ func (s *orderService) GetUserTicketsByOrderID(orderID string) ([]dto.UserTicket
 			TicketID:   ticket.TicketID.String(),
 			EventID:    ticket.EventID.String(),
 			EventName:  ticket.Event.Title,
-			TicketName: ticketNameMap[ticket.TicketID.String()],
+			TicketName: ticket.Ticket.Name,
 			QRCode:     ticket.QRCode,
 			IsUsed:     ticket.IsUsed,
 		})

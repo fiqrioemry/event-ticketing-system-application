@@ -9,7 +9,6 @@ import (
 	"server/middleware"
 	"server/repositories"
 	"server/routes"
-	"server/seeders"
 	"server/services"
 	"server/utils"
 
@@ -25,7 +24,7 @@ func main() {
 	utils.InitLogger()
 	db := config.DB
 
-	seeders.ResetDatabase(db)
+	// seeders.ResetDatabase(db)
 
 	// ========== initialisasi layer ============
 	repo := repositories.InitRepositories(db)
@@ -46,7 +45,7 @@ func main() {
 		middleware.CORS(),
 		middleware.RateLimiter(100, 60*time.Second),
 		middleware.LimitFileSize(12<<20),
-		middleware.APIKeyGateway([]string{"/api/v1/payments/stripe/webhook"}),
+		middleware.APIKeyGateway([]string{"/api/v1/payments/stripe/webhooks"}),
 	)
 
 	// ========== inisialisasi routes ===========

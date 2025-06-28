@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"server/config"
 	"server/dto"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type AuthService interface {
@@ -111,7 +113,7 @@ func (s *authService) Login(req *dto.LoginRequest) (*dto.AuthResponse, error) {
 	}
 
 	user, err := s.user.GetUserByEmail(req.Email)
-	if err != nil || !utils.CheckPasswordHash(req.Password, user.Password) {
+	if err != nil || user == nil || !utils.CheckPasswordHash(req.Password, user.Password) {
 		config.RedisClient.Incr(config.Ctx, redisKey)
 		config.RedisClient.Expire(config.Ctx, redisKey, 30*time.Minute)
 		return nil, customErr.NewUnauthorized("Invalid email or password")
@@ -134,30 +136,39 @@ func (s *authService) Login(req *dto.LoginRequest) (*dto.AuthResponse, error) {
 		RefreshToken: refreshToken,
 	}, nil
 }
-
 func (s *authService) Register(req *dto.RegisterRequest) error {
 	user, err := s.user.GetUserByEmail(req.Email)
-	if err == nil {
-		if user.Password == "-" {
-			return customErr.NewAlreadyExist("Email already registered")
-		}
+	if err == nil && user != nil {
+		// Email sudah terdaftar
 		return customErr.NewAlreadyExist("Email already registered")
 	}
 
+	// Jika error bukan karena record not found, maka itu error internal
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return customErr.ErrInternalServer
+	}
+
+	// Generate password hash
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
 		return customErr.ErrInternalServer
 	}
 
+	// Kirim OTP
 	otp := utils.GenerateOTP(6)
 	subject := "One-Time Password (OTP)"
 	body := fmt.Sprintf("Your OTP code is %s", otp)
+
 	if err := utils.SendEmail(subject, req.Email, otp, body); err != nil {
 		return customErr.ErrInternalServer
 	}
+
+	// Simpan OTP ke Redis
 	if err := config.RedisClient.Set(config.Ctx, "otp:"+req.Email, otp, 5*time.Minute).Err(); err != nil {
 		return customErr.ErrInternalServer
 	}
+
+	// Simpan data user sementara di Redis
 	tempData := map[string]string{
 		"fullname": req.Fullname,
 		"password": hashedPassword,
@@ -167,10 +178,10 @@ func (s *authService) Register(req *dto.RegisterRequest) error {
 	if err != nil {
 		return customErr.ErrInternalServer
 	}
-
 	if err := config.RedisClient.Set(config.Ctx, "otp_data:"+req.Email, jsonStr, 30*time.Minute).Err(); err != nil {
 		return customErr.ErrInternalServer
 	}
+
 	return nil
 }
 
@@ -184,6 +195,9 @@ func (s *authService) RefreshToken(c *gin.Context, refreshToken string) (string,
 
 	user, err := s.user.GetUserByID(userID)
 	if err != nil {
+		return "", customErr.NewInternal("failed to find user", err)
+	}
+	if user == nil {
 		return "", customErr.NewNotFound("User not found")
 	}
 

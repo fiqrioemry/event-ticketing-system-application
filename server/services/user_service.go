@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"server/dto"
 	customErr "server/errors"
 	"server/repositories"
@@ -28,7 +29,7 @@ func NewUserService(user repositories.UserRepository) UserService {
 func (s *userService) GetUserProfile(userID string) (*dto.ProfileResponse, error) {
 	user, err := s.user.GetUserByID(userID)
 	if err != nil {
-		return nil, err
+		return nil, customErr.NewInternal("failed to get user profile", err)
 	}
 
 	return &dto.ProfileResponse{
@@ -36,6 +37,8 @@ func (s *userService) GetUserProfile(userID string) (*dto.ProfileResponse, error
 		Email:    user.Email,
 		Fullname: user.Fullname,
 		Avatar:   user.AvatarURL,
+		Balance:  fmt.Sprintf("%.2f", user.Balance),
+		JoinedAt: user.CreatedAt.Format("2006-01-02"),
 		Role:     user.Role,
 	}, nil
 }
@@ -60,7 +63,7 @@ func (s *userService) UpdateUserDetail(userID string, req *dto.UpdateProfileRequ
 }
 
 func (s *userService) GetAllUsers(params dto.UserQueryParams) ([]dto.UserListResponse, *dto.PaginationResponse, error) {
-	users, total, err := s.user.GetAllUser(params)
+	users, total, err := s.user.GetAllUsers(params)
 	if err != nil {
 		return nil, nil, customErr.NewInternal("failed to fetch user list", err)
 	}

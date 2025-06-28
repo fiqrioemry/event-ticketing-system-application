@@ -49,11 +49,12 @@ func InitDatabase() {
 	if err := DB.AutoMigrate(
 		&models.User{},
 		&models.Event{},
-		&models.TicketCategory{},
+		&models.Order{},
 		&models.Ticket{},
-		&models.Report{},
-		&models.Purchase{},
+		&models.OrderDetail{},
 		&models.Payment{},
+		&models.UserTicket{},
+		&models.WithdrawalRequest{},
 	); err != nil {
 		panic("Migration failed: " + err.Error())
 	}

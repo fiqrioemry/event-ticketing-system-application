@@ -26,14 +26,16 @@ func NewUserTicketRepository(db *gorm.DB) UserTicketRepository {
 func (r *userTicketRepository) CreateUserTicket(ticket *models.UserTicket) error {
 	return r.db.Create(ticket).Error
 }
-
 func (r *userTicketRepository) GetUserTicketsByOrderID(orderID string) ([]models.UserTicket, error) {
 	var userTickets []models.UserTicket
 
 	err := r.db.
-		Table("user_tickets").
+		Model(&models.UserTicket{}).
+		Select("user_tickets.*").
 		Joins("JOIN order_details ON user_tickets.ticket_id = order_details.ticket_id").
 		Where("order_details.order_id = ?", orderID).
+		Group("user_tickets.id").
+		Preload("Event").
 		Find(&userTickets).Error
 
 	return userTickets, err
