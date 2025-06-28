@@ -4,6 +4,7 @@ import (
 	"errors"
 	"server/models"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -13,6 +14,7 @@ type UserTicketRepository interface {
 	ValidateQRCode(qr string) (*models.UserTicket, error)
 	GetUserTicketByID(id string) (*models.UserTicket, error)
 	GetUserTicketsByOrderID(orderID string) ([]models.UserTicket, error)
+	CountUserTicketsByTicketID(ticketID uuid.UUID) (int64, error)
 }
 
 type userTicketRepository struct {
@@ -65,4 +67,10 @@ func (r *userTicketRepository) MarkTicketUsed(id string) error {
 		"is_used": true,
 		"used_at": gorm.Expr("NOW()"),
 	}).Error
+}
+
+func (r *userTicketRepository) CountUserTicketsByTicketID(ticketID uuid.UUID) (int64, error) {
+	var count int64
+	err := r.db.Model(&models.UserTicket{}).Where("ticket_id = ?", ticketID).Count(&count).Error
+	return count, err
 }

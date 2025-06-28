@@ -93,7 +93,6 @@ func (s *paymentService) StripeWebhookNotification(event stripe.Event) error {
 		return fmt.Errorf("failed to fetch order details: %w", err)
 	}
 
-	// Tambahkan logika update ticket.sold
 	for _, detail := range orderDetails {
 		ticket, err := s.ticket.GetTicketByID(detail.TicketID.String())
 		if err != nil || ticket == nil {
@@ -108,15 +107,23 @@ func (s *paymentService) StripeWebhookNotification(event stripe.Event) error {
 	}
 
 	for _, detail := range orderDetails {
+		existingCount, err := s.userTicket.CountUserTicketsByTicketID(detail.TicketID)
+		if err != nil {
+			return fmt.Errorf("failed to count existing user tickets: %w", err)
+		}
+
 		for i := 0; i < detail.Quantity; i++ {
+			qrCode := fmt.Sprintf("TICKET-%s-%d", detail.TicketID.String(), existingCount+int64(i)+1)
+
 			userTicket := &models.UserTicket{
 				ID:       uuid.New(),
 				UserID:   order.UserID,
 				EventID:  order.EventID,
 				TicketID: detail.TicketID,
 				IsUsed:   false,
-				QRCode:   fmt.Sprintf("TICKET-%s-%d", detail.TicketID.String(), i+1),
+				QRCode:   qrCode,
 			}
+
 			if err := s.userTicket.CreateUserTicket(userTicket); err != nil {
 				return fmt.Errorf("failed to create user ticket: %w", err)
 			}
