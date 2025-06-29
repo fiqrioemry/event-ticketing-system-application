@@ -68,8 +68,6 @@ func (s *withdrawalService) ReviewWithdrawal(id, adminID, status string) (*dto.W
 		return nil, customErr.NewBadRequest("withdrawal already reviewed")
 	}
 	w.Status = status
-	w.ReviewedBy = &uuid.UUID{}
-	*w.ReviewedBy = uuid.MustParse(adminID)
 	w.ApprovedAt = &time.Time{}
 	*w.ApprovedAt = time.Now()
 
@@ -94,9 +92,7 @@ func toWithdrawalDTO(w *models.WithdrawalRequest) *dto.WithdrawalResponse {
 		Reason:    w.Reason,
 		CreatedAt: w.CreatedAt.Format(time.RFC3339),
 	}
-	if w.ReviewedBy != nil {
-		res.ReviewedBy = w.ReviewedBy.String()
-	}
+
 	if w.ApprovedAt != nil {
 		res.ApprovedAt = w.ApprovedAt.Format(time.RFC3339)
 	}

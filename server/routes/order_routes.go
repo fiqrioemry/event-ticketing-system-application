@@ -13,7 +13,7 @@ func OrderRoutes(r *gin.RouterGroup, h *handlers.OrderHandler) {
 	order.GET("", h.GetMyOrders)
 	order.GET("/:id", h.GetOrderDetail)
 	order.POST("", h.CreateNewOrder)
-	order.GET("/:id/user-tickets", h.GetUserTicketsByOrder)
+	order.GET("/:id/user-tickets", h.GetUserTickets)
 	order.POST("/:id/refund", h.RefundOrder)
 
 }

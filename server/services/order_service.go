@@ -17,7 +17,7 @@ import (
 
 type OrderService interface {
 	GetOrderDetail(orderID string) ([]dto.OrderDetailResponse, error)
-	GetUserTicketsByOrderID(orderID string) ([]dto.UserTicketResponse, error)
+	GetUserTicketsByOrder(orderID string, userID string) ([]dto.UserTicketResponse, error)
 	RefundOrder(orderID string, userID string, reason string) (*dto.RefundOrderResponse, error)
 	CreateNewOrder(req dto.CreateOrderRequest, userID string) (*dto.CheckoutSessionResponse, error)
 	GetMyOrders(userID string, params dto.OrderQueryParams) ([]dto.OrderResponse, *dto.PaginationResponse, error)
@@ -218,8 +218,18 @@ func (s *orderService) GetOrderDetail(orderID string) ([]dto.OrderDetailResponse
 	return responses, nil
 }
 
-func (s *orderService) GetUserTicketsByOrderID(orderID string) ([]dto.UserTicketResponse, error) {
-	userTickets, err := s.userTicket.GetUserTicketsByOrderID(orderID)
+func (s *orderService) GetUserTicketsByOrder(orderID, userID string) ([]dto.UserTicketResponse, error) {
+
+	order, err := s.repo.GetOrderByID(orderID)
+	if order == nil {
+		return nil, customErr.NewNotFound("order not found")
+	}
+
+	if err != nil {
+		return nil, customErr.NewInternal("failed to get order", err)
+	}
+
+	userTickets, err := s.userTicket.GetUserTickets(order.EventID.String(), userID)
 	if err != nil {
 		return nil, customErr.NewInternal("failed to get user tickets", err)
 	}

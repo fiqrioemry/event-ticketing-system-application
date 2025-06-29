@@ -117,6 +117,7 @@ func (s *eventService) GetAllEvents(params dto.EventQueryParams) ([]dto.EventRes
 			CreatedAt:   item.CreatedAt.Format("2006-01-02"),
 		})
 	}
+
 	pagination := utils.Paginate(total, params.Page, params.Limit)
 	return result, pagination, nil
 }

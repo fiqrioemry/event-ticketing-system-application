@@ -13,8 +13,8 @@ type UserTicketRepository interface {
 	CreateUserTicket(ticket *models.UserTicket) error
 	ValidateQRCode(qr string) (*models.UserTicket, error)
 	GetUserTicketByID(id string) (*models.UserTicket, error)
-	GetUserTicketsByOrderID(orderID string) ([]models.UserTicket, error)
 	CountUserTicketsByTicketID(ticketID uuid.UUID) (int64, error)
+	GetUserTickets(eventID string, userID string) ([]models.UserTicket, error)
 }
 
 type userTicketRepository struct {
@@ -28,19 +28,12 @@ func NewUserTicketRepository(db *gorm.DB) UserTicketRepository {
 func (r *userTicketRepository) CreateUserTicket(ticket *models.UserTicket) error {
 	return r.db.Create(ticket).Error
 }
-func (r *userTicketRepository) GetUserTicketsByOrderID(orderID string) ([]models.UserTicket, error) {
+func (r *userTicketRepository) GetUserTickets(eventID string, userID string) ([]models.UserTicket, error) {
 	var userTickets []models.UserTicket
-
-	err := r.db.
-		Model(&models.UserTicket{}).
-		Select("user_tickets.*").
-		Joins("JOIN order_details ON user_tickets.ticket_id = order_details.ticket_id").
-		Where("order_details.order_id = ?", orderID).
-		Group("user_tickets.id").
-		Preload("Event").
-		Preload("Ticket").
-		Find(&userTickets).Error
-
+	err := r.db.Preload("Ticket").Preload("Event").Where("event_id = ? AND user_id = ?", eventID, userID).Find(&userTickets).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
 	return userTickets, err
 }
 

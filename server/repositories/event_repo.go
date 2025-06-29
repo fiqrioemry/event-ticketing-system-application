@@ -55,44 +55,35 @@ func (r *eventRepository) GetAllEvents(params dto.EventQueryParams) ([]models.Ev
 	var events []models.Event
 	var count int64
 
-	db := r.db.Model(&models.Event{}).Joins("LEFT JOIN tickets ON tickets.event_id = events.id")
+	db := r.db.Model(&models.Event{})
 
 	if params.Q != "" {
 		like := "%" + params.Q + "%"
-		db = db.Where("events.title LIKE ?", like)
+		db = db.Where("title LIKE ?", like)
 	}
-
 	if params.Location != "" {
-		db = db.Where("events.location = ?", params.Location)
+		db = db.Where("location = ?", params.Location)
 	}
 
 	switch params.Sort {
-	case "price_asc":
-		db = db.Select("events.*, MIN(tickets.price) AS min_price").
-			Group("events.id").
-			Order("min_price ASC")
-	case "price_desc":
-		db = db.Select("events.*, MIN(tickets.price) AS min_price").
-			Group("events.id").
-			Order("min_price DESC")
 	case "date_asc":
-		db = db.Order("events.date ASC")
+		db = db.Order("date ASC")
 	case "date_desc":
-		db = db.Order("events.date DESC")
+		db = db.Order("date DESC")
 	case "created_at_asc":
-		db = db.Order("events.created_at ASC")
+		db = db.Order("created_at ASC")
 	case "created_at_desc":
-		db = db.Order("events.created_at DESC")
+		db = db.Order("created_at DESC")
 	default:
-		db = db.Order("events.created_at DESC")
+		db = db.Order("created_at DESC")
 	}
 
 	offset := (params.Page - 1) * params.Limit
 
-	if err := db.Session(&gorm.Session{}).Count(&count).Error; err != nil {
+	if err := db.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := db.Limit(params.Limit).Offset(offset).Preload("Tickets").Find(&events).Error; err != nil {
+	if err := db.Preload("Tickets").Limit(params.Limit).Offset(offset).Find(&events).Error; err != nil {
 		return nil, 0, err
 	}
 

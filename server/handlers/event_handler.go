@@ -27,7 +27,7 @@ func (h *EventHandler) GetAllEvents(c *gin.Context) {
 		utils.HandleServiceError(c, err, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": data, "pagination": pagination})
+	c.JSON(http.StatusOK, gin.H{"events": data, "pagination": pagination})
 }
 
 func (h *EventHandler) GetEventByID(c *gin.Context) {

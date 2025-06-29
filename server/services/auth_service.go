@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -80,6 +81,7 @@ func (s *authService) VerifyOTP(email, otp string) (*dto.AuthResponse, error) {
 	}
 
 	user := models.User{
+		ID:        uuid.New(),
 		Email:     email,
 		Fullname:  temp["fullname"],
 		Password:  temp["password"],

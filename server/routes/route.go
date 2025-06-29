@@ -18,7 +18,6 @@ func InitRoutes(r *gin.Engine, h *handlers.Handlers) {
 	TicketRoutes(api, h.TicketHandler)
 	ReportRoutes(api, h.ReportHandler)
 	WithdrawalRoutes(api, h.WithdrawalHandler)
-
 	UserTicketRoutes(api, h.UserTicketHandler)
 
 }

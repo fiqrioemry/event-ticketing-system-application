@@ -29,6 +29,9 @@ func NewPaymentService(repo repositories.PaymentRepository, order repositories.O
 // ** khusus cron job update status to failed
 func (s *paymentService) ExpireOldPendingPayments() error {
 
+	// TODO: Log expired payment IDs for audit trail or monitoring
+	// TODO: notifications models are not implemented, create for future improvements
+
 	rows, err := s.repo.ExpireOldPendingPayments()
 	if err != nil {
 		return fmt.Errorf("failed to expire pending payments: %w", err)
@@ -53,6 +56,7 @@ func (s *paymentService) StripeWebhookNotification(event stripe.Event) error {
 	paymentID, ok := session.Metadata["payment_id"]
 
 	if !ok || paymentID == "" {
+		// TODO: Consider logging the full Stripe event for debugging if metadata is missing
 		return fmt.Errorf("missing order_id in Stripe metadata")
 	}
 
@@ -112,7 +116,7 @@ func (s *paymentService) StripeWebhookNotification(event stripe.Event) error {
 			return fmt.Errorf("failed to count existing user tickets: %w", err)
 		}
 
-		for i := 0; i < detail.Quantity; i++ {
+		for i := range detail.Quantity {
 			qrCode := fmt.Sprintf("TICKET-%s-%d", detail.TicketID.String(), existingCount+int64(i)+1)
 
 			userTicket := &models.UserTicket{

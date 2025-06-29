@@ -51,7 +51,7 @@ func (h *OrderHandler) GetMyOrders(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":       orders,
+		"orders":     orders,
 		"pagination": pagination,
 	})
 }
@@ -67,17 +67,18 @@ func (h *OrderHandler) GetOrderDetail(c *gin.Context) {
 	c.JSON(http.StatusOK, order)
 }
 
-func (h *OrderHandler) GetUserTicketsByOrder(c *gin.Context) {
+func (h *OrderHandler) GetUserTickets(c *gin.Context) {
+	userID := utils.MustGetUserID(c)
 	orderID := c.Param("id")
 
-	tickets, err := h.service.GetUserTicketsByOrderID(orderID)
+	tickets, err := h.service.GetUserTicketsByOrder(orderID, userID)
 	if err != nil {
 		utils.HandleServiceError(c, err, err.Error())
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data": tickets,
+		"tickets": tickets,
 	})
 }
 
