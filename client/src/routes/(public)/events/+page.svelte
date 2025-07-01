@@ -1,163 +1,118 @@
 <script lang="ts">
-	import { formatDate } from '$lib/utils.js';
-	import { Input } from '$lib/components/ui/input';
+	import qs from 'qs';
+	import {
+		isLoading,
+		eventFilters,
+		eventSortOptions,
+		eventResponse,
+		eventLocationOptions,
+		eventStatusOptions
+	} from '$lib/stores/event.store';
+	import { goto } from '$app/navigation';
+	import { formatDate } from '$lib/utils';
+	import Input from '$lib/components/ui/input/input.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import * as Select from '$lib/components/ui/select/index.js';
-	import * as Pagination from '$lib/components/ui/pagination/index.js';
-	import { ArrowRight, CalendarDays, MapPin, Search } from '@lucide/svelte';
+	import NoSearchResult from '$lib/components/common/NoResult.svelte';
+	import { ArrowRight, CalendarDays, MapPin } from '@lucide/svelte';
+	import FilterSelect from '$lib/components/common/FilterSelect.svelte';
+	import Pagination from '$lib/components/common/Pagination.svelte';
+	import EventListsLoading from '$lib/components/loading/EventListsLoading.svelte';
 
-	let search = '';
-	let status = '';
+	$: filters = $eventFilters;
+	$: loading = $isLoading;
+	$: events = $eventResponse.events;
+	$: pagination = $eventResponse.pagination;
 
-	const data = {
-		page: 1,
-		total: 10,
-		events: [
-			{
-				id: '6e890af2-2f0f-41d2-bcc3-d9450fcd73f1',
-				title: 'Konser Musik Senja',
-				image: 'https://placehold.co/400x400?text=Konser+Musik+Senja',
-				description: 'Nikmati malam dengan alunan musik akustik dari musisi ternama Indonesia.',
-				location: 'Jakarta, Indonesia',
-				date: '2025-07-12T19:00:00Z',
-				status: 'active'
-			},
-			{
-				id: 'b7de28d4-1b3d-4a8d-bf69-03b1715c23a4',
-				title: 'Tech Conference 2025',
-				image: 'https://placehold.co/400x400?text=Tech+Conference',
-				description:
-					'Konferensi teknologi terbesar tahun ini dengan pembicara dari Google, AWS, dan Microsoft.',
-				location: 'Bandung Convention Center',
-				date: '2025-08-02T09:00:00Z',
-				status: 'active'
-			},
-			{
-				id: '3f79e3bb-2b98-429e-b1e0-b861f9fcdbbe',
-				title: 'Workshop UI/UX Design',
-				image: 'https://placehold.co/400x400?text=UI%2FUX+Workshop',
-				description:
-					'Pelatihan intensif untuk belajar membuat desain digital yang menarik dan efisien.',
-				location: 'Yogyakarta, Indonesia',
-				date: '2025-07-28T13:00:00Z',
-				status: 'active'
-			},
-			{
-				id: 'df347ec2-58a1-4b8a-b16d-4829ef7ffaaa',
-				title: 'Festival Kuliner Nusantara',
-				image: 'https://placehold.co/400x400?text=Festival+Kuliner',
-				description: 'Rasakan cita rasa dari Sabang sampai Merauke dalam satu tempat!',
-				location: 'Surabaya Food Park',
-				date: '2025-09-10T10:00:00Z',
-				status: 'active'
-			},
-			{
-				id: 'fa125d23-dccc-4e70-b00c-3b0c7255a3a2',
-				title: 'Seminar Finansial Milenial',
-				image: 'https://placehold.co/400x400?text=Seminar+Finansial',
-				description: 'Pelajari cara mengatur keuangan dan berinvestasi di usia muda.',
-				location: 'Online (Zoom Webinar)',
-				date: '2025-07-20T18:00:00Z',
-				status: 'active'
-			}
-		]
-	};
-	function handleSearch() {
-		// Implement logic pencarian jika pakai query string
-		console.log('search:', search, 'status:', status);
+	function fetchEvents(newPage?: number) {
+		const merged = { ...filters };
+
+		if (newPage !== undefined) {
+			merged.page = newPage;
+		}
+
+		const query = qs.stringify(merged, { skipNulls: true });
+		isLoading.set(true);
+		goto(`/events?${query}`);
 	}
 </script>
 
-<svelte:head>
-	<title>Events | MyBrand</title>
-	<meta
-		name="description"
-		content="See all the events available and purchase tickets for your favorite events with MyBrand."
-	/>
-</svelte:head>
-
 <section class="mx-auto max-w-7xl px-4 py-10">
-	<h1 class="mb-6 text-3xl font-bold">🎉 Daftar Event Populer</h1>
+	<h1 class="mb-6 text-2xl font-bold">Daftar Event</h1>
+	<div class="mb-6 flex flex-col items-center gap-4 md:flex-row">
+		<div class="flex w-full items-center md:w-1/2">
+			<form on:submit={() => fetchEvents(1)} class=" flex w-full gap-4">
+				<Input type="text" name="search" bind:value={filters.search} placeholder="Search" />
+				<Button type="submit">Search</Button>
+			</form>
+		</div>
 
-	<!-- Filter & Search -->
-	<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-		<div class="flex gap-2">
-			<Input
-				class="w-64"
-				placeholder="Cari judul event..."
-				bind:value={search}
-				onkeydown={(e) => e.key === 'Enter' && handleSearch()}
+		<div class="flex w-full items-center gap-4 md:w-1/2">
+			<FilterSelect
+				value={filters.location}
+				options={eventLocationOptions}
+				on:change={(e) => {
+					filters.location = e.detail;
+					fetchEvents(1);
+				}}
 			/>
 
-			<Select.Root bind:value={status} type="single">
-				<Select.Trigger class="w-[180px]">Filter Status</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="active">Active</Select.Item>
-					<Select.Item value="done">Done</Select.Item>
-					<Select.Item value="cancelled">Cancelled</Select.Item>
-				</Select.Content>
-			</Select.Root>
+			<FilterSelect
+				value={filters.status}
+				options={eventStatusOptions}
+				on:change={(e) => {
+					filters.status = e.detail;
+					fetchEvents(1);
+				}}
+			/>
+
+			<FilterSelect
+				value={filters.sort}
+				options={eventSortOptions}
+				on:change={(e) => {
+					filters.sort = e.detail;
+					fetchEvents(1);
+				}}
+			/>
 		</div>
 	</div>
-
-	<!-- Event Grid -->
-	<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-		{#each data.events as event}
-			<div
-				class="overflow-hidden rounded-2xl bg-white shadow transition hover:shadow-lg dark:bg-zinc-900"
-			>
-				<img src={event.image} alt={event.title} class="h-48 w-full object-cover" />
-				<div class="flex flex-col gap-2 p-4">
-					<h2 class="line-clamp-2 text-lg font-semibold">{event.title}</h2>
-					<p class="text-muted-foreground line-clamp-3 text-sm">{event.description}</p>
-
-					<div class="text-muted-foreground mt-2 flex items-center gap-2 text-sm">
-						<CalendarDays class="h-4 w-4" />
-						<span>{formatDate(event.date)}</span>
-					</div>
-					<div class="text-muted-foreground flex items-center gap-2 text-sm">
-						<MapPin class="h-4 w-4" />
-						<span>{event.location}</span>
-					</div>
-
-					<div class="mt-4">
-						<Button class="w-full justify-between" href={`/events/${event.id}`} variant="outline">
-							Lihat Detail <ArrowRight class="ml-2 h-4 w-4" />
-						</Button>
+	{#if loading}
+		<EventListsLoading />
+	{:else if events && events.length > 0}
+		<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+			{#each events as event}
+				<div class="overflow-hidden rounded-2xl bg-white shadow hover:shadow-lg dark:bg-zinc-900">
+					<img src={event.image} alt={event.title} class="h-48 w-full object-cover" />
+					<div class="flex flex-col gap-2 p-4">
+						<h2 class="line-clamp-2 text-lg font-semibold">{event.title}</h2>
+						<p class="text-muted-foreground line-clamp-3 text-sm">{event.description}</p>
+						<div class="text-muted-foreground mt-2 flex items-center gap-2 text-sm">
+							<CalendarDays class="h-4 w-4" />
+							<span>{formatDate(event.date)}</span>
+						</div>
+						<div class="text-muted-foreground flex items-center gap-2 text-sm">
+							<MapPin class="h-4 w-4" />
+							<span>{event.location}</span>
+						</div>
+						<div class="mt-4">
+							<Button href={`/events/${event.id}`} class="w-full justify-between" variant="outline">
+								Lihat Detail <ArrowRight class="ml-2 h-4 w-4" />
+							</Button>
+						</div>
 					</div>
 				</div>
-			</div>
-		{/each}
-	</div>
+			{/each}
+		</div>
+	{:else}
+		<NoSearchResult />
+	{/if}
 
-	<!-- Pagination -->
-	<div class="mt-10 flex justify-center">
-		<Pagination.Root count={data.events.length} perPage={data.total}>
-			{#snippet children({ pages, currentPage })}
-				<Pagination.Content>
-					<Pagination.Item>
-						<Pagination.PrevButton />
-					</Pagination.Item>
+	<!-- Pagination tombol -->
 
-					{#each pages as page (page.key)}
-						{#if page.type === 'ellipsis'}
-							<Pagination.Item>
-								<Pagination.Ellipsis />
-							</Pagination.Item>
-						{:else}
-							<Pagination.Item>
-								<Pagination.Link {page} isActive={currentPage === page.value}>
-									{page.value}
-								</Pagination.Link>
-							</Pagination.Item>
-						{/if}
-					{/each}
-
-					<Pagination.Item>
-						<Pagination.NextButton />
-					</Pagination.Item>
-				</Pagination.Content>
-			{/snippet}
-		</Pagination.Root>
-	</div>
+	{#if pagination}
+		<Pagination
+			page={pagination.page}
+			totalPages={pagination.totalPages}
+			on:change={(e) => fetchEvents(e.detail)}
+		/>
+	{/if}
 </section>

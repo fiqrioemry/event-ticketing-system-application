@@ -1,16 +1,8 @@
 <script lang="ts">
 	import Label from '$lib/components/ui/label/label.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-
-	const userProfile = {
-		id: 'bdb598a3-1c86-4e95-93d2-65cda21b4b33',
-		email: 'charlie@event.com',
-		fullname: 'Charlie Customer',
-		avatar: 'https://api.dicebear.com/6.x/initials/svg?seed=charlie',
-		role: 'user',
-		balance: '210000.00',
-		joinedAt: '2025-06-28'
-	};
+	export let data;
+	let userProfile = data.userSession;
 </script>
 
 <svelte:head>
@@ -18,7 +10,7 @@
 	<meta name="description" content="Manage your profile and account settings with MyBrand." />
 </svelte:head>
 
-<section class="bg-background mx-auto max-w-3xl rounded-lg border p-6">
+<section class="bg-background mx-auto max-w-5xl rounded-lg border p-6">
 	<div class="mb-6 flex items-center gap-4">
 		<img src={userProfile.avatar} alt="Avatar" class="h-16 w-16 rounded-full border" />
 		<div>

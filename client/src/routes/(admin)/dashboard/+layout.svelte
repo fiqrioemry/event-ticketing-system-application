@@ -1,10 +1,10 @@
 <script lang="ts">
-	import UserMenu from '$lib/components/common/UserMenu.svelte';
+	import AdminMenu from '$lib/components/common/AdminMenu.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
+	import { userSession } from '$lib/stores/auth.store.js';
 
-	export let data: any = null;
-	let user = data?.user?.user_metadata || null;
+	$: user = $userSession;
 </script>
 
 <Sidebar.Provider>
@@ -16,7 +16,7 @@
 			<div class="block md:hidden">
 				<Sidebar.Trigger />
 			</div>
-			<UserMenu {user} />
+			<AdminMenu {user} />
 		</header>
 		<main class="bg-muted">
 			<div class="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-7xl flex-1 flex-col py-12">

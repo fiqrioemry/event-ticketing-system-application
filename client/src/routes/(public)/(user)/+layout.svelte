@@ -1,15 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { formatRupiah } from '$lib/utils';
 	import { User, ShoppingBag, Undo2, LogOut } from '@lucide/svelte';
 
-	const user = {
-		name: 'Ahmad Fiqri',
-		email: 'ahmad@example.com',
-		avatar: 'https://placehold.co/100x100?text=AF',
-		balance: 150000,
-		role: 'user'
-	};
-
+	export let data;
+	let user = data.userSession;
 	$: currentPath = $page.url.pathname;
 </script>
 
@@ -21,11 +16,11 @@
 <section class="mx-auto my-8 flex max-w-7xl gap-6 px-4">
 	<aside class="bg-background h-96 w-60 rounded-lg border p-4">
 		<div class="mb-6 flex flex-col items-center text-center">
-			<img src={user.avatar} alt="Avatar" class="h-20 w-20 rounded-full object-cover" />
-			<h2 class="mt-2 text-lg font-semibold">{user.name}</h2>
-			<p class="text-muted-foreground text-sm">{user.email}</p>
+			<img src={user?.avatar} alt="Avatar" class="h-20 w-20 rounded-full object-cover" />
+			<h2 class="mt-2 text-lg font-semibold">{user?.fullname}</h2>
+			<p class="text-muted-foreground text-sm">{user?.email}</p>
 			<p class="mt-1 text-xs text-green-600 dark:text-green-400">
-				Saldo: Rp {user.balance.toLocaleString('id-ID')}
+				Saldo: Rp {user?.balance ? formatRupiah(user?.balance) : '0.00'}
 			</p>
 		</div>
 
@@ -39,12 +34,12 @@
 				Profile
 			</a>
 			<a
-				href="/purchase"
+				href="/orders"
 				class="flex items-center gap-2 rounded-md px-3 py-2 transition-colors
-					{currentPath === '/purchase' ? 'bg-muted text-primary' : 'hover:bg-muted hover:text-primary'}"
+					{currentPath === '/orders' ? 'bg-muted text-primary' : 'hover:bg-muted hover:text-primary'}"
 			>
 				<ShoppingBag class="h-4 w-4" />
-				Purchasement
+				Orders
 			</a>
 			<a
 				href="/refund"
