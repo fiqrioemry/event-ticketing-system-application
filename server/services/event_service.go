@@ -124,6 +124,7 @@ func (s *eventService) GetAllEvents(params dto.EventQueryParams) ([]dto.EventRes
 			IsAvailable: isAvailable,
 			StartTime:   item.StartTime,
 			EndTime:     item.EndTime,
+			Status:      item.Status,
 			Date:        item.Date.Format("2006-01-02"),
 			CreatedAt:   item.CreatedAt.Format("2006-01-02"),
 		})
