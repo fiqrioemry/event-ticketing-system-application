@@ -1,1 +1,5 @@
-<a href="/"><h1 class="text-lg font-bold">TIKET<span class="text-blue-500">KU</span></h1></a>
+<script>
+	import Logo from '$lib/assets/TIKETKU.svg';
+</script>
+
+<a href="/"><img class="h-8" src={Logo} alt="TIKETKU" /></a>

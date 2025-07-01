@@ -1,13 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { useLogout } from '$lib/hooks/useAuth';
+	import { DollarSign, LogOut, UserCircle } from '@lucide/svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
-	import { DollarSign, LogOut, UserCircle } from '@lucide/svelte';
-	import { useLogout } from '$lib/hooks/useAuth';
 
 	export let user;
-
-	console.log('UserMenu user', user);
 </script>
 
 <DropdownMenu.Root>
@@ -18,20 +16,23 @@
 		</Avatar>
 		<div class="hidden flex-col overflow-hidden text-left md:flex">
 			<span class=" truncate text-xs font-bold">
-				{user?.fullname || 'user'}
+				{user?.fullname || 'admin'}
 			</span>
 			<span class="truncate text-xs">
-				{user?.email || 'user@example.com'}
+				{user?.email || 'admin@example.com'}
 			</span>
 		</div>
 	</DropdownMenu.Trigger>
 
 	<DropdownMenu.Content align="end" class="w-52">
-		<DropdownMenu.Item onclick={() => goto('/profile')}>
-			<UserCircle class="mr-2 h-4 w-4" /> my profile
+		<DropdownMenu.Item onclick={() => goto('/dashboard')}>
+			<UserCircle class="mr-2 h-4 w-4" /> overview
 		</DropdownMenu.Item>
-		<DropdownMenu.Item onclick={() => goto('/orders')}>
-			<DollarSign class="mr-2 h-4 w-4" />my orders
+		<DropdownMenu.Item onclick={() => goto('/dashboard/events')}>
+			<DollarSign class="mr-2 h-4 w-4" /> events
+		</DropdownMenu.Item>
+		<DropdownMenu.Item onclick={() => goto('/dashboard/payment')}>
+			<DollarSign class="mr-2 h-4 w-4" /> payment
 		</DropdownMenu.Item>
 		<DropdownMenu.Item class="text-red-600" onclick={useLogout}>
 			<LogOut href="/signout" class="mr-2 h-4 w-4" /> Logout
