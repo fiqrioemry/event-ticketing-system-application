@@ -86,10 +86,21 @@ func (s *eventService) CreateEvent(req dto.CreateEventRequest) error {
 }
 
 func (s *eventService) GetAllEvents(params dto.EventQueryParams) ([]dto.EventResponse, *dto.PaginationResponse, error) {
+
+	if params.Page <= 0 {
+		params.Page = 1
+	}
+
+	if params.Limit <= 0 {
+		params.Limit = 10
+	}
+
 	list, total, err := s.repo.GetAllEvents(params)
 	if err != nil {
 		return nil, nil, err
+
 	}
+
 	var result []dto.EventResponse
 	for _, item := range list {
 		totalQuota := 0

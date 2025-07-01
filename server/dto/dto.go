@@ -2,8 +2,10 @@ package dto
 
 import (
 	"mime/multipart"
-	"time"
 )
+
+// ? Separate each dto into sections based on their functionality
+// TODO : sepearate based on modules if project is getting bigger
 
 // 1. USER & AUTHENTICATION MODULE MANAGEMENT =============
 type RegisterRequest struct {
@@ -75,14 +77,14 @@ type UserDetailResponse struct {
 
 // 2. EVENT MODULE MANAGEMENT =============
 type EventQueryParams struct {
-	Q         string `form:"q"`
+	Q         string `form:"search"`
 	Status    string `form:"status"`
 	StartDate string `form:"startDate"`
 	EndDate   string `form:"endDate"`
 	Location  string `form:"location"`
 	Sort      string `form:"sort"`
-	Page      int    `form:"page,default=1"`
-	Limit     int    `form:"limit,default=10"`
+	Page      int    `form:"page" default:"1"`
+	Limit     int    `form:"limit" default:"10"`
 }
 
 type EventResponse struct {
@@ -172,8 +174,8 @@ type TicketResponse struct {
 type TicketQueryParams struct {
 	EventID string `form:"event_id"`
 	Status  string `form:"status"` // available, booked, cancelled
-	Page    int    `form:"page" binding:"min=1"`
-	Limit   int    `form:"limit" binding:"min=1,max=100"`
+	Page    int    `form:"page" default:"1"`
+	Limit   int    `form:"limit" default:"10"`
 }
 
 type CreateTicketRequest struct {
@@ -216,7 +218,7 @@ type CheckoutSessionResponse struct {
 }
 
 type OrderQueryParams struct {
-	Q      string `form:"q"`
+	Q      string `form:"search"`
 	Status string `form:"status"`
 	Page   int    `form:"page,default=1"`
 	Limit  int    `form:"limit,default=10"`
@@ -293,38 +295,109 @@ type WithdrawalResponse struct {
 
 // 8. REPORT MODULE MANAGEMENT =============
 
-type TransactionReportResponse struct {
-	OrderID      string     `json:"orderId"`
-	UserName     string     `json:"userName"`
-	UserEmail    string     `json:"userEmail"`
-	EventTitle   string     `json:"eventTitle"`
-	TotalPaid    float64    `json:"totalPaid"`
-	RefundAmount *float64   `json:"refundAmount,omitempty"`
-	NetRevenue   float64    `json:"netRevenue"`
-	Status       string     `json:"status"`
-	Method       string     `json:"method"`
-	PaidAt       *time.Time `json:"-"`
-	RefundedAt   *time.Time `json:"-"`
+type SummaryReportResponse struct {
+	TotalRevenue    float64 `json:"totalRevenue"`
+	TotalOrders     int64   `json:"totalOrders"`
+	TotalTicketSold int64   `json:"totalTicketSold"`
+	TotalRefund     float64 `json:"totalRefund"`
+	TotalUsers      int64   `json:"totalUsers"`
+	TotalEvents     int64   `json:"totalEvents"`
 }
 
-type TransactionReportResponseOutput struct {
-	OrderID      string   `json:"orderId"`
-	UserName     string   `json:"userName"`
-	UserEmail    string   `json:"userEmail"`
-	EventTitle   string   `json:"eventTitle"`
-	TotalPaid    float64  `json:"totalPaid"`
-	RefundAmount *float64 `json:"refundAmount,omitempty"`
-	NetRevenue   float64  `json:"netRevenue"`
-	Status       string   `json:"status"`
-	Method       string   `json:"method"`
-	PaidAt       *string  `json:"paidAt,omitempty"`
-	RefundedAt   *string  `json:"refundedAt,omitempty"`
+type OrderReportQueryParams struct {
+	Q        string `form:"search"`
+	Page     int    `form:"page,default=1"`
+	Limit    int    `form:"limit,default=10"`
+	Status   string `form:"status"`
+	EventID  string `form:"eventId"`
+	DateFrom string `form:"dateFrom"`
+	DateTo   string `form:"dateTo"`
+	Export   string `form:"export" binding:"omitempty,oneof=csv pdf"`
 }
 
-type TransactionReportQuery struct {
-	StartDate string `form:"start_date"`
-	EndDate   string `form:"end_date"`
-	ExportCSV bool   `form:"export"`
+type OrderReportResponse struct {
+	OrderID    string  `json:"orderId"`
+	Fullname   string  `json:"fullname"`
+	Email      string  `json:"email"`
+	EventTitle string  `json:"eventTitle"`
+	TotalPrice float64 `json:"totalPrice"`
+	Status     string  `json:"status"`
+	CreatedAt  string  `json:"createdAt"`
+}
+
+type TicketReportQueryParams struct {
+	Q      string `form:"search"`
+	Page   int    `form:"page,default=1"`
+	Limit  int    `form:"limit,default=10"`
+	Export string `form:"export" binding:"omitempty,oneof=csv pdf"`
+}
+
+type TicketSalesReportResponse struct {
+	EventTitle  string  `json:"eventTitle"`
+	TicketName  string  `json:"ticketName"`
+	TicketPrice float64 `json:"ticketPrice"`
+	Quota       int     `json:"quota"`
+	Sold        int     `json:"sold"`
+	Remaining   int     `json:"remaining"`
+}
+
+// payment report response
+type PaymentReportQueryParams struct {
+	Q      string `form:"search"`
+	Page   int    `form:"page,default=1"`
+	Limit  int    `form:"limit,default=10"`
+	Status string `form:"status"`
+	Method string `form:"method"`
+	Export string `form:"export" binding:"omitempty,oneof=csv pdf"`
+}
+
+type PaymentReportResponse struct {
+	PaymentID string  `json:"paymentId"`
+	OrderID   string  `json:"orderId"`
+	Fullname  string  `json:"fullname"`
+	Email     string  `json:"email"`
+	Method    string  `json:"method"`
+	Amount    float64 `json:"amount"`
+	Status    string  `json:"status"`
+	PaidAt    *string `json:"paidAt,omitempty"`
+}
+
+// refund report response
+type RefundReportQueryParams struct {
+	Q      string `form:"search"`
+	Page   int    `form:"page,default=1"`
+	Limit  int    `form:"limit,default=10"`
+	Export string `form:"export" binding:"omitempty,oneof=csv pdf"`
+}
+
+type RefundReportResponse struct {
+	OrderID      string  `json:"orderId"`
+	Fullname     string  `json:"fullname"`
+	Email        string  `json:"email"`
+	EventTitle   string  `json:"eventTitle"`
+	RefundAmount float64 `json:"refundAmount"`
+	RefundReason string  `json:"refundReason"`
+	RefundedAt   string  `json:"refundedAt"`
+}
+
+// Withdrawal
+type WithdrawalReportQueryParams struct {
+	Q      string `form:"search"`
+	Page   int    `form:"page,default=1"`
+	Limit  int    `form:"limit,default=10"`
+	Export string `form:"export" binding:"omitempty,oneof=csv pdf"`
+}
+
+type WithdrawalReportResponse struct {
+	WithdrawalID string  `json:"withdrawalId"`
+	UserID       string  `json:"userId"`
+	Fullname     string  `json:"fullname"`
+	Email        string  `json:"email"`
+	Amount       float64 `json:"amount"`
+	Status       string  `json:"status"`
+	Reason       string  `json:"reason"`
+	CreatedAt    string  `json:"createdAt"`
+	ApprovedAt   *string `json:"approvedAt,omitempty"`
 }
 
 // PAGINATION RESPONSE

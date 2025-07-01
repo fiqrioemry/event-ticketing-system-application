@@ -6,6 +6,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// ? Separate each models into it own files
+// TODO : sepearate based on modules if project is getting bigger
+
 type User struct {
 	ID        uuid.UUID `gorm:"type:char(36);primaryKey"`
 	Fullname  string    `gorm:"type:varchar(100);not null"`
@@ -16,6 +19,18 @@ type User struct {
 	Balance   float64   `gorm:"type:decimal(12,2);default:0.00"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 }
+
+// TODO : Future improvements add categories and tags for events, so event can be classfied and filtered based on these attributes
+//
+//	type Category struct {
+//		ID        uuid.UUID `gorm:"type:char(36);primaryKey"`
+//		Name      string    `gorm:"type:varchar(100);unique;not null"`
+//		CreatedAt time.Time `gorm:"autoCreateTime"`
+//	}
+//
+
+//  CategoryID uuid.UUID `gorm:"type:char(36);index"` // TODO : Future improvements, add category for event
+// TODO : Add Slug for better SEO and URL structure
 
 type Event struct {
 	ID          uuid.UUID `gorm:"type:char(36);primaryKey"`
@@ -30,6 +45,7 @@ type Event struct {
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 
+	// Category category `gorm:"foreignKey:CategoryID"` // TODO : Future improvements, add category for event
 	Tickets []Ticket `gorm:"foreignKey:EventID"`
 }
 
@@ -42,9 +58,11 @@ type Ticket struct {
 	Quota         int       `gorm:"not null"`
 	Sold          int       `gorm:"default:0"`
 	Refundable    bool      `gorm:"default:false"`
-	RefundPercent int       `gorm:"type:int;default:50"` // new
+	RefundPercent int       `gorm:"type:int;default:50"`
 	CreatedAt     time.Time `gorm:"autoCreateTime"`
 	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
+
+	Event Event `gorm:"foreignKey:EventID"`
 }
 
 type Order struct {
@@ -90,6 +108,8 @@ type Payment struct {
 	PaidAt    *time.Time `gorm:"default:null"`
 	CreatedAt time.Time  `gorm:"autoCreateTime"`
 	UpdatedAt time.Time  `gorm:"autoUpdateTime"`
+
+	Order Order `gorm:"foreignKey:OrderID"`
 }
 
 type UserTicket struct {
@@ -114,5 +134,6 @@ type WithdrawalRequest struct {
 	Reason     string    `gorm:"type:text"`
 	CreatedAt  time.Time `gorm:"autoCreateTime"`
 	ApprovedAt *time.Time
-	ReviewedBy *uuid.UUID `gorm:"type:char(36);"` // admin reviewer
+
+	User User `gorm:"foreignKey:UserID"`
 }

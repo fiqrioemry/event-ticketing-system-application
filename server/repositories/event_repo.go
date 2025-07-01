@@ -61,8 +61,19 @@ func (r *eventRepository) GetAllEvents(params dto.EventQueryParams) ([]models.Ev
 		like := "%" + params.Q + "%"
 		db = db.Where("title LIKE ?", like)
 	}
-	if params.Location != "" {
+
+	if params.Location != "" && params.Location != "all" {
 		db = db.Where("location = ?", params.Location)
+	}
+
+	if params.Status != "" && params.Status != "all" {
+		db = db.Where("status = ?", params.Status)
+	}
+	if params.StartDate != "" {
+		db = db.Where("date >= ?", params.StartDate)
+	}
+	if params.EndDate != "" {
+		db = db.Where("date <= ?", params.EndDate)
 	}
 
 	switch params.Sort {
@@ -70,14 +81,23 @@ func (r *eventRepository) GetAllEvents(params dto.EventQueryParams) ([]models.Ev
 		db = db.Order("date ASC")
 	case "date_desc":
 		db = db.Order("date DESC")
-	case "created_at_asc":
-		db = db.Order("created_at ASC")
-	case "created_at_desc":
-		db = db.Order("created_at DESC")
+	case "title_asc":
+		db = db.Order("title ASC")
+	case "title_desc":
+		db = db.Order("title DESC")
 	default:
-		db = db.Order("created_at DESC")
+		db = db.Order("date DESC")
 	}
 
+	if params.Page <= 0 {
+		params.Page = 1
+	}
+
+	if params.Limit <= 0 {
+		params.Limit = 10
+	}
+
+	// 5. Pagination
 	offset := (params.Page - 1) * params.Limit
 
 	if err := db.Count(&count).Error; err != nil {

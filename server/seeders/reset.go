@@ -41,12 +41,9 @@ func ResetDatabase(db *gorm.DB) {
 	if err != nil {
 		log.Fatalf("Failed to migrate tables: %v", err)
 	}
-
 	log.Println("migration completed successfully.")
 
 	log.Println("seeding dummy data...")
-
 	SeedAll(db)
-	SeedFirstData(db)
 	log.Println("seeding completed successfully.")
 }

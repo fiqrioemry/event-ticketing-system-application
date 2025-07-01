@@ -9,6 +9,7 @@ import (
 	"server/middleware"
 	"server/repositories"
 	"server/routes"
+	"server/seeders"
 	"server/services"
 	"server/utils"
 
@@ -24,7 +25,7 @@ func main() {
 	utils.InitLogger()
 	db := config.DB
 
-	// seeders.ResetDatabase(db)
+	seeders.ResetDatabase(db)
 
 	// ========== initialisasi layer ============
 	repo := repositories.InitRepositories(db)
@@ -37,6 +38,10 @@ func main() {
 
 	// ========== Inisialisasi gin engine =======
 	r := gin.Default()
+	err := r.SetTrustedProxies(config.GetTrustedProxies())
+	if err != nil {
+		log.Fatalf("Failed to set trusted proxies: %v", err)
+	}
 
 	// ========== inisialisasi Middleware ========
 	r.Use(
