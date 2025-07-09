@@ -4,64 +4,33 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    container_name: server-ticketing
+    container_name: ticketing_app
+    restart: unless-stopped
     env_file:
       - .env
-    ports:
-      - "8000:8000"
-    depends_on:
-      - redis
-      - db
-    volumes:
-      - .:/app
-    networks:
-      - ticketing_net
 
-  db:
-    image: mysql:latest
-    container_name: mysql-ticketing
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql-ticketing-data:/var/lib/mysql
+    ports: # delete for production  | use only for development
+      - "5004:5004"
+    expose:
+      - "5004"
     healthcheck:
       test:
-        [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "${DB_HOST}",
-          "-u",
-          "${DB_USERNAME}",
-          "--password=${DB_PASSWORD}",
-        ]
-      interval: 5s
+        ["CMD-SHELL", "wget -q --spider http://localhost:5002/health || exit 1"]
+      interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 10s
+    volumes: # delete on production | use only for development
+      - .:/app
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.ecommerce.rule=Host(`tiketku.ahmadfiqrioemry.com`)"
+    #   - "traefik.http.services.ecommerce.loadbalancer.server.port=5004"
+    #   - "traefik.http.routers.ecommerce.entrypoints=websecure"
+    #   - "traefik.http.routers.ecommerce.tls.certresolver=letsencrypt"
     networks:
-      - ticketing_net
-
-  redis:
-    image: redis:7-alpine
-    container_name: redis-ticketing
-    ports:
-      - "6380:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 3
-    networks:
-      - ticketing_net
-
-volumes:
-  mysql-ticketing-data:
+      - shared-net
 
 networks:
-  ticketing_net:
+  shared-net:
+    external: true

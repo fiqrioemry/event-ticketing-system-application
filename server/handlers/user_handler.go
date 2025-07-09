@@ -22,7 +22,7 @@ func (h *UserHandler) GetMyProfile(c *gin.Context) {
 
 	response, err := h.service.GetUserProfile(userID)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, response)
@@ -38,14 +38,14 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 
 	avatarURL, err := utils.UploadImageWithValidation(req.Avatar)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	req.AvatarURL = avatarURL
 
 	if err := h.service.UpdateUserDetail(userID, &req); err != nil {
 		utils.CleanupImageOnError(avatarURL)
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -60,7 +60,7 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 
 	users, pagination, err := h.service.GetAllUsers(params)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -75,7 +75,7 @@ func (h *UserHandler) GetUserDetail(c *gin.Context) {
 	user, err := h.service.GetUserDetail(id)
 
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, user)

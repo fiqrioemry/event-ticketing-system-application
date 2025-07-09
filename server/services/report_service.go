@@ -2,9 +2,9 @@ package services
 
 import (
 	"server/dto"
+	customErr "server/errors"
 	"server/repositories"
 	"server/utils"
-	"time"
 )
 
 type ReportService interface {
@@ -31,7 +31,7 @@ func (s *reportService) GetSummary() (*dto.SummaryReportResponse, error) {
 func (s *reportService) GetOrderReports(params dto.OrderReportQueryParams) ([]dto.OrderReportResponse, *dto.PaginationResponse, error) {
 	orders, total, err := s.repo.GetOrderReports(params)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, customErr.NewInternalServerError("failed to retrieve order reports", err)
 	}
 
 	var reports []dto.OrderReportResponse
@@ -43,7 +43,7 @@ func (s *reportService) GetOrderReports(params dto.OrderReportQueryParams) ([]dt
 			EventTitle: order.Event.Title,
 			TotalPrice: order.TotalPrice,
 			Status:     order.Status,
-			CreatedAt:  order.CreatedAt.Format(time.RFC3339),
+			CreatedAt:  order.CreatedAt,
 		})
 	}
 
@@ -55,7 +55,7 @@ func (s *reportService) GetTicketSalesReports(params dto.TicketReportQueryParams
 
 	list, total, err := s.repo.GetTicketSalesReports(params)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, customErr.NewInternalServerError("failed to retrieve ticket sales reports", err)
 	}
 
 	var reports []dto.TicketSalesReportResponse
@@ -77,17 +77,11 @@ func (s *reportService) GetTicketSalesReports(params dto.TicketReportQueryParams
 func (s *reportService) GetPaymentReports(params dto.PaymentReportQueryParams) ([]dto.PaymentReportResponse, *dto.PaginationResponse, error) {
 	list, total, err := s.repo.GetPaymentReports(params)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, customErr.NewInternalServerError("failed to retrieve payment reports", err)
 	}
 
 	var results []dto.PaymentReportResponse
 	for _, p := range list {
-		var paidAtStr *string
-		if p.PaidAt != nil {
-			str := p.PaidAt.Format(time.RFC3339)
-			paidAtStr = &str
-		}
-
 		results = append(results, dto.PaymentReportResponse{
 			PaymentID: p.ID.String(),
 			OrderID:   p.OrderID.String(),
@@ -96,7 +90,7 @@ func (s *reportService) GetPaymentReports(params dto.PaymentReportQueryParams) (
 			Method:    p.Method,
 			Amount:    p.Amount,
 			Status:    p.Status,
-			PaidAt:    paidAtStr,
+			PaidAt:    p.PaidAt,
 		})
 	}
 
@@ -107,7 +101,7 @@ func (s *reportService) GetPaymentReports(params dto.PaymentReportQueryParams) (
 func (s *reportService) GetRefundReports(params dto.RefundReportQueryParams) ([]dto.RefundReportResponse, *dto.PaginationResponse, error) {
 	list, total, err := s.repo.GetRefundReports(params)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, customErr.NewInternalServerError("failed to retrieve refund reports", err)
 	}
 
 	var result []dto.RefundReportResponse
@@ -119,7 +113,7 @@ func (s *reportService) GetRefundReports(params dto.RefundReportQueryParams) ([]
 			EventTitle:   o.Event.Title,
 			RefundAmount: o.RefundAmount,
 			RefundReason: o.RefundReason,
-			RefundedAt:   o.RefundedAt.Format(time.RFC3339),
+			RefundedAt:   o.RefundedAt,
 		})
 	}
 
@@ -131,16 +125,11 @@ func (s *reportService) GetRefundReports(params dto.RefundReportQueryParams) ([]
 func (s *reportService) GetWithdrawalReports(params dto.WithdrawalReportQueryParams) ([]dto.WithdrawalReportResponse, *dto.PaginationResponse, error) {
 	list, total, err := s.repo.GetWithdrawalReports(params)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, customErr.NewInternalServerError("failed to retrieve withdrawal reports", err)
 	}
 
 	var result []dto.WithdrawalReportResponse
 	for _, w := range list {
-		var approvedAt *string
-		if w.ApprovedAt != nil {
-			str := w.ApprovedAt.Format(time.RFC3339)
-			approvedAt = &str
-		}
 
 		result = append(result, dto.WithdrawalReportResponse{
 			WithdrawalID: w.ID.String(),
@@ -150,8 +139,8 @@ func (s *reportService) GetWithdrawalReports(params dto.WithdrawalReportQueryPar
 			Amount:       w.Amount,
 			Status:       w.Status,
 			Reason:       w.Reason,
-			CreatedAt:    w.CreatedAt.Format(time.RFC3339),
-			ApprovedAt:   approvedAt,
+			CreatedAt:    w.CreatedAt,
+			ApprovedAt:   w.ApprovedAt,
 		})
 	}
 

@@ -28,8 +28,6 @@ func InitLogger() {
 		panic("failed to initialize logger")
 	}
 }
-
-// Akses global logger
 func GetLogger() *zap.Logger {
 	return logger
 }

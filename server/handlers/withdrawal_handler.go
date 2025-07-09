@@ -25,7 +25,7 @@ func (h *WithdrawalHandler) CreateWithdrawal(c *gin.Context) {
 	}
 	res, err := h.service.CreateWithdrawal(userID, req)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, res)
@@ -34,7 +34,7 @@ func (h *WithdrawalHandler) CreateWithdrawal(c *gin.Context) {
 func (h *WithdrawalHandler) GetAllWithdrawals(c *gin.Context) {
 	res, err := h.service.GetAllWithdrawals()
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, res)
@@ -52,7 +52,7 @@ func (h *WithdrawalHandler) ReviewWithdrawal(c *gin.Context) {
 	}
 	res, err := h.service.ReviewWithdrawal(id, adminID, body.Status)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, res)

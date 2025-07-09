@@ -23,7 +23,7 @@ func GenerateOTP(length int) string {
 	digits := "0123456789"
 	var sb strings.Builder
 
-	for i := 0; i < length; i++ {
+	for range length {
 		sb.WriteByte(digits[rand.Intn(len(digits))])
 	}
 
@@ -51,7 +51,7 @@ func leftPad(s string, pad string, length int) string {
 }
 
 func GenerateInvoiceNumber(paymentID uuid.UUID) string {
-	timestamp := time.Now().Format("20060102")
+	timestamp := time.Now()
 	shortID := paymentID.String()[:8]
 	return fmt.Sprintf("INV/%s/%s", timestamp, shortID)
 }

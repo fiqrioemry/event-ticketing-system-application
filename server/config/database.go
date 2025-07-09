@@ -14,27 +14,25 @@ import (
 var DB *gorm.DB
 
 func InitDatabase() {
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	username := os.Getenv("DB_USERNAME")
-	password := os.Getenv("DB_PASSWORD")
-	database := os.Getenv("DB_NAME")
+	dbRootURL := os.Getenv("DB_ROOT_URL")
+	dbURL := os.Getenv("DB_URL")
+	dbName := os.Getenv("DB_NAME")
 
-	dsnRoot := fmt.Sprintf("%s:%s@tcp(%s:%s)/?parseTime=true", username, password, host, port)
-	dbRoot, err := gorm.Open(mysql.Open(dsnRoot), &gorm.Config{})
+	// Connect to MySQL server
+	dbRoot, err := gorm.Open(mysql.Open(dbRootURL), &gorm.Config{})
 	if err != nil {
 		panic("Failed to connect to MySQL server: " + err.Error())
 	}
 
-	sql := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", database)
+	// Create DB if not exists
+	sql := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", dbName)
 	if err := dbRoot.Exec(sql).Error; err != nil {
 		panic("Failed to create database: " + err.Error())
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", username, password, host, port, database)
-
+	// Connect ke database utama
 	for range 10 {
-		DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+		DB, err = gorm.Open(mysql.Open(dbURL), &gorm.Config{})
 		if err == nil {
 			break
 		}
@@ -45,7 +43,7 @@ func InitDatabase() {
 		panic("Failed to connect to database: " + err.Error())
 	}
 
-	// migration
+	// Migration
 	if err := DB.AutoMigrate(
 		&models.User{},
 		&models.Event{},

@@ -1,127 +1,98 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
-	"mime/multipart"
-	"net/http"
-	"strconv"
+	"server/errors"
 	"strings"
 
-	"slices"
-
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/go-playground/validator/v10"
 )
 
 func BindAndValidateJSON[T any](c *gin.Context, req *T) bool {
 	if err := c.ShouldBindJSON(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid JSON request",
-			"error":   err.Error(),
-		})
+
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			validationErr := buildValidationError(validationErrors)
+			HandleError(c, validationErr)
+			return false
+		}
+
+		if jsonErr, ok := err.(*json.UnmarshalTypeError); ok {
+			parseErr := errors.NewBadRequest("Invalid data type for field").WithContext("field", jsonErr.Field).WithContext("expected_type", jsonErr.Type.String())
+			HandleError(c, parseErr)
+			return false
+		}
+
+		if syntaxErr, ok := err.(*json.SyntaxError); ok {
+
+			parseErr := errors.NewBadRequest("Invalid JSON syntax").WithContext("offset", syntaxErr.Offset)
+			HandleError(c, parseErr)
+			return false
+		}
+
+		parseErr := errors.NewBadRequest("Invalid JSON format")
+		HandleError(c, parseErr)
 		return false
 	}
 	return true
 }
-
 func BindAndValidateForm[T any](c *gin.Context, req *T) bool {
 	if err := c.ShouldBind(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid form-data request",
-			"error":   err.Error(),
-		})
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			validationErr := buildValidationError(validationErrors)
+			HandleError(c, validationErr)
+			return false
+		}
+
+		formErr := errors.NewBadRequest("Invalid form data format")
+		HandleError(c, formErr)
 		return false
 	}
 	return true
 }
 
-func GetQueryInt(c *gin.Context, key string, defaultValue int) int {
-	valStr := c.Query(key)
-	val, err := strconv.Atoi(valStr)
-	if err != nil || val <= 0 {
-		return defaultValue
-	}
-	return val
-}
+func buildValidationError(validationErrors validator.ValidationErrors) *errors.AppError {
+	errorDetails := make(map[string]string)
 
-func IsDiceBear(url string) bool {
-	return strings.Contains(url, "dicebear.com")
-}
+	for _, fieldError := range validationErrors {
+		fieldName := strings.ToLower(fieldError.Field())
 
-func MustParseUUID(c *gin.Context, input string, fieldName string) uuid.UUID {
-	parsed, err := uuid.Parse(input)
-	if err != nil || parsed == uuid.Nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid UUID for field: " + fieldName,
-		})
-		return uuid.Nil
-	}
-	return parsed
-}
-
-func ParseBoolFormField(c *gin.Context, field string) bool {
-	val := c.PostForm(field)
-	parsed, err := strconv.ParseBool(val)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": fmt.Sprintf("Invalid boolean value for field \"%s\": \"%s\"", field, val),
-		})
-		return false
-	}
-	return parsed
-}
-
-func GetMultipartForm(c *gin.Context) *multipart.Form {
-	form, err := c.MultipartForm()
-	if err != nil || form == nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid multipart form",
-			"error":   err.Error(),
-		})
-		c.Abort()
-		return nil
-	}
-	return form
-}
-
-func ParseMixedImages(form *multipart.Form) (urls []string, files []*multipart.FileHeader) {
-	for _, val := range form.Value["images"] {
-		if isURL(val) {
-			urls = append(urls, val)
+		switch fieldError.Tag() {
+		case "required":
+			errorDetails[fieldName] = fmt.Sprintf("%s is required", fieldName)
+		case "email":
+			errorDetails[fieldName] = "Please provide a valid email address"
+		case "min":
+			errorDetails[fieldName] = fmt.Sprintf("%s must be at least %s characters", fieldName, fieldError.Param())
+		case "max":
+			errorDetails[fieldName] = fmt.Sprintf("%s must be at most %s characters", fieldName, fieldError.Param())
+		case "len":
+			errorDetails[fieldName] = fmt.Sprintf("%s must be exactly %s characters", fieldName, fieldError.Param())
+		case "numeric":
+			errorDetails[fieldName] = fmt.Sprintf("%s must be numeric", fieldName)
+		case "alpha":
+			errorDetails[fieldName] = fmt.Sprintf("%s must contain only letters", fieldName)
+		case "alphanum":
+			errorDetails[fieldName] = fmt.Sprintf("%s must contain only letters and numbers", fieldName)
+		case "url":
+			errorDetails[fieldName] = fmt.Sprintf("%s must be a valid URL", fieldName)
+		case "uuid":
+			errorDetails[fieldName] = fmt.Sprintf("%s must be a valid UUID", fieldName)
+		default:
+			errorDetails[fieldName] = fmt.Sprintf("%s is invalid", fieldName)
 		}
 	}
-	files = form.File["images"]
-	return
+
+	err := errors.NewBadRequest("Validation failed")
+	err.WithContext("validation_errors", errorDetails)
+	err.WithContext("failed_fields", len(errorDetails))
+
+	return err
 }
 
-func isURL(input string) bool {
-	return strings.HasPrefix(input, "http://") || strings.HasPrefix(input, "https://")
-}
-
-func HandleBindError(c *gin.Context, message string) {
-	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-		"message": message,
-	})
-}
-func EmptyString(s *string) string {
-	if s != nil {
-		return *s
-	}
-	return ""
-}
-
-func ContainsInt(slice []int, value int) bool {
-	return slices.Contains(slice, value)
-}
-
-func SetIfNotEmpty(target *string, source string) {
-	if source != "" {
-		*target = source
-	}
-}
-
-func SetIfNotZero(target *int, source int) {
-	if source != 0 {
-		*target = source
-	}
+func ValidateStruct(s any) error {
+	validate := validator.New()
+	return validate.Struct(s)
 }

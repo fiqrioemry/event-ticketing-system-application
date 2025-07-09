@@ -21,7 +21,7 @@ func InitServices(r *repositories.Repositories) *Services {
 		UserService:       NewUserService(r.UserRepository),
 		AuthService:       NewAuthService(r.AuthRepository),
 		EventService:      NewEventService(r.EventRepository, r.TicketRepository),
-		TicketService:     NewTicketService(r.TicketRepository),
+		TicketService:     NewTicketService(r.TicketRepository, r.EventRepository),
 		OrderService:      NewOrderService(r.OrderRepository, r.UserRepository, r.TicketRepository, r.EventRepository, r.UserTicketRepository),
 		PaymentService:    NewPaymentService(r.PaymentRepository, r.OrderRepository, r.TicketRepository, r.UserTicketRepository),
 		UserTicketService: NewUserTicketService(r.UserTicketRepository),

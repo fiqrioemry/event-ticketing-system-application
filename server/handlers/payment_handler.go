@@ -25,7 +25,7 @@ func (h *PaymentHandler) HandlePaymentNotifications(c *gin.Context) {
 
 	body, err := c.GetRawData()
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -35,12 +35,12 @@ func (h *PaymentHandler) HandlePaymentNotifications(c *gin.Context) {
 		IgnoreAPIVersionMismatch: true,
 	})
 	if err != nil {
-		utils.HandleServiceError(c, err, "Invalid Signatures")
+		utils.HandleError(c, err)
 		return
 	}
 
 	if err := h.service.StripeWebhookNotification(event); err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 

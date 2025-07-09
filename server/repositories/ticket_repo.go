@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"server/models"
 
 	"gorm.io/gorm"
@@ -39,20 +38,13 @@ func (r *ticketRepository) UpdateTicket(ticket *models.Ticket) error {
 func (r *ticketRepository) GetTicketByID(ID string) (*models.Ticket, error) {
 	var ticket models.Ticket
 	err := r.db.Where("id = ?", ID).First(&ticket).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
-	return &ticket, nil
+	return &ticket, err
 }
 
 func (r *ticketRepository) GetTicketByEventID(eventID string) (*models.Ticket, error) {
 	var ticket models.Ticket
 	err := r.db.Where("event_id = ?", eventID).First(&ticket).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
-
-	return &ticket, nil
+	return &ticket, err
 }
 
 func (r *ticketRepository) GetAllTicketsByEventID(eventID string) ([]*models.Ticket, error) {

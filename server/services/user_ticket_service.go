@@ -4,7 +4,6 @@ import (
 	"server/dto"
 	customErr "server/errors"
 	"server/repositories"
-	"time"
 )
 
 type UserTicketService interface {
@@ -23,8 +22,8 @@ func NewUserTicketService(repo repositories.UserTicketRepository) UserTicketServ
 
 func (s *userTicketService) GetUserTicketByID(id string) (*dto.UserTicketResponse, error) {
 	ticket, err := s.repo.GetUserTicketByID(id)
-	if err != nil {
-		return nil, customErr.NewNotFound("ticket not found")
+	if err != nil || ticket == nil {
+		return nil, customErr.NewNotFound("ticket not found").WithContext("ticketID", id)
 	}
 
 	resp := &dto.UserTicketResponse{
@@ -35,10 +34,9 @@ func (s *userTicketService) GetUserTicketByID(id string) (*dto.UserTicketRespons
 		IsUsed:     ticket.IsUsed,
 		EventName:  ticket.Event.Title,
 		TicketName: ticket.Ticket.Name,
+		UsedAt:     ticket.UsedAt,
 	}
-	if ticket.UsedAt != nil {
-		resp.UsedAt = ticket.UsedAt.Format(time.RFC3339)
-	}
+
 	return resp, nil
 }
 
@@ -59,10 +57,9 @@ func (s *userTicketService) ValidateTicket(qr string) (*dto.UserTicketResponse, 
 		IsUsed:     ticket.IsUsed,
 		EventName:  ticket.Event.Title,
 		TicketName: ticket.Ticket.Name,
+		UsedAt:     ticket.UsedAt,
 	}
-	if ticket.UsedAt != nil {
-		resp.UsedAt = ticket.UsedAt.Format(time.RFC3339)
-	}
+
 	return resp, nil
 }
 

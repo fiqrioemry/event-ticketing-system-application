@@ -20,7 +20,7 @@ func NewReportHandler(service services.ReportService) *ReportHandler {
 func (h *ReportHandler) GetSummary(c *gin.Context) {
 	data, err := h.service.GetSummary()
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, data)
@@ -34,7 +34,7 @@ func (h *ReportHandler) GetOrderReports(c *gin.Context) {
 	lists, pagination, err := h.service.GetOrderReports(params)
 
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	// TODO : still hard coded, need to be dynamic. create a utils to handle this all at once
@@ -59,7 +59,7 @@ func (h *ReportHandler) GetTicketSalesReports(c *gin.Context) {
 
 	lists, pagination, err := h.service.GetTicketSalesReports(params)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *ReportHandler) GetPaymentReports(c *gin.Context) {
 
 	lists, pagination, err := h.service.GetPaymentReports(params)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	if params.Export == "csv" {
@@ -114,7 +114,7 @@ func (h *ReportHandler) GetRefundReports(c *gin.Context) {
 
 	lists, pagination, err := h.service.GetRefundReports(params)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	if params.Export == "csv" {
@@ -142,7 +142,7 @@ func (h *ReportHandler) GetWithdrawalReports(c *gin.Context) {
 
 	lists, pagination, err := h.service.GetWithdrawalReports(params)
 	if err != nil {
-		utils.HandleServiceError(c, err, "failed to get withdrawal reports")
+		utils.HandleError(c, err)
 		return
 	}
 

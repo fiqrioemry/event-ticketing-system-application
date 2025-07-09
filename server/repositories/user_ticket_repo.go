@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"server/models"
 
 	"github.com/google/uuid"
@@ -31,27 +30,18 @@ func (r *userTicketRepository) CreateUserTicket(ticket *models.UserTicket) error
 func (r *userTicketRepository) GetUserTickets(eventID string, userID string) ([]models.UserTicket, error) {
 	var userTickets []models.UserTicket
 	err := r.db.Preload("Ticket").Preload("Event").Where("event_id = ? AND user_id = ?", eventID, userID).Find(&userTickets).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
 	return userTickets, err
 }
 
 func (r *userTicketRepository) GetUserTicketByID(id string) (*models.UserTicket, error) {
 	var ticket models.UserTicket
 	err := r.db.Preload("Ticket").First(&ticket, "id = ?", id).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
 	return &ticket, err
 }
 
 func (r *userTicketRepository) ValidateQRCode(qr string) (*models.UserTicket, error) {
 	var ticket models.UserTicket
 	err := r.db.Preload("Ticket").Preload("Event").Where("qr_code = ?", qr).First(&ticket).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
 	return &ticket, err
 }
 

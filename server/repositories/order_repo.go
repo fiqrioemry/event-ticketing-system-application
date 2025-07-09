@@ -1,12 +1,9 @@
 package repositories
 
 import (
-	"errors"
-	"fmt"
 	"server/dto"
 	"server/models"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -47,21 +44,12 @@ func (r *orderRepository) CreateOrder(order *models.Order) error {
 func (r *orderRepository) GetOrderByID(ID string) (*models.Order, error) {
 	var order models.Order
 	err := r.db.Preload("Event").First(&order, "id = ?", ID).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
-	return &order, nil
+	return &order, err
 }
 
 func (r *orderRepository) GetOrderDetails(orderID string) ([]models.OrderDetail, error) {
 	var orderDetails []models.OrderDetail
-
-	parsedID, err := uuid.Parse(orderID)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("Fetching order details for order ID: %s\n", parsedID)
-	err = r.db.Where("order_id = ?", parsedID).Find(&orderDetails).Error
+	err := r.db.Where("order_id = ?", orderID).Find(&orderDetails).Error
 	return orderDetails, err
 }
 

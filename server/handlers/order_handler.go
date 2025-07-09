@@ -28,7 +28,7 @@ func (h *OrderHandler) CreateNewOrder(c *gin.Context) {
 
 	orderID, err := h.service.CreateNewOrder(req, userID)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -46,7 +46,7 @@ func (h *OrderHandler) GetMyOrders(c *gin.Context) {
 
 	orders, pagination, err := h.service.GetMyOrders(userID, params)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *OrderHandler) GetUserTickets(c *gin.Context) {
 
 	tickets, err := h.service.GetUserTicketsByOrder(orderID, userID)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -93,7 +93,7 @@ func (h *OrderHandler) RefundOrder(c *gin.Context) {
 
 	res, err := h.service.RefundOrder(orderID, userID, req.Reason)
 	if err != nil {
-		utils.HandleServiceError(c, err, "refund failed")
+		utils.HandleError(c, err)
 		return
 	}
 

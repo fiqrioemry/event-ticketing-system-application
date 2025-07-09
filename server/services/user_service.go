@@ -1,14 +1,10 @@
 package services
 
 import (
-	"errors"
-	"fmt"
 	"server/dto"
 	customErr "server/errors"
 	"server/repositories"
 	"server/utils"
-
-	"gorm.io/gorm"
 )
 
 type UserService interface {
@@ -28,8 +24,8 @@ func NewUserService(user repositories.UserRepository) UserService {
 
 func (s *userService) GetUserProfile(userID string) (*dto.ProfileResponse, error) {
 	user, err := s.user.GetUserByID(userID)
-	if err != nil {
-		return nil, customErr.NewInternal("failed to get user profile", err)
+	if err != nil || user == nil {
+		return nil, customErr.NewNotFound("user not found").WithContext("userID", userID)
 	}
 
 	return &dto.ProfileResponse{
@@ -37,26 +33,23 @@ func (s *userService) GetUserProfile(userID string) (*dto.ProfileResponse, error
 		Email:    user.Email,
 		Fullname: user.Fullname,
 		Avatar:   user.AvatarURL,
-		Balance:  fmt.Sprintf("%.2f", user.Balance),
-		JoinedAt: user.CreatedAt.Format("2006-01-02"),
+		Balance:  user.Balance,
+		JoinedAt: user.CreatedAt,
 		Role:     user.Role,
 	}, nil
 }
 
 func (s *userService) UpdateUserDetail(userID string, req *dto.UpdateProfileRequest) error {
 	user, err := s.user.GetUserByID(userID)
-	switch {
-	case errors.Is(err, gorm.ErrRecordNotFound):
-		return customErr.NewNotFound("user not found")
-	case err != nil:
-		return customErr.NewInternal("failed to get user", err)
+	if err != nil || user == nil {
+		return customErr.NewNotFound("user not found").WithContext("userID", userID)
 	}
 
 	user.Fullname = req.Fullname
 	user.AvatarURL = req.AvatarURL
 
 	if err := s.user.UpdateUser(user); err != nil {
-		return customErr.NewInternal("failed to update user profile", err)
+		return customErr.NewInternalServerError("failed to update user profile", err)
 	}
 
 	return nil
@@ -65,7 +58,7 @@ func (s *userService) UpdateUserDetail(userID string, req *dto.UpdateProfileRequ
 func (s *userService) GetAllUsers(params dto.UserQueryParams) ([]dto.UserListResponse, *dto.PaginationResponse, error) {
 	users, total, err := s.user.GetAllUsers(params)
 	if err != nil {
-		return nil, nil, customErr.NewInternal("failed to fetch user list", err)
+		return nil, nil, customErr.NewInternalServerError("failed to fetch user list", err)
 	}
 
 	var results []dto.UserListResponse
@@ -76,7 +69,7 @@ func (s *userService) GetAllUsers(params dto.UserQueryParams) ([]dto.UserListRes
 			Role:     u.Role,
 			Avatar:   u.AvatarURL,
 			Fullname: u.Fullname,
-			JoinedAt: u.CreatedAt.Format("2006-01-02"),
+			JoinedAt: u.CreatedAt,
 		})
 	}
 
@@ -86,19 +79,17 @@ func (s *userService) GetAllUsers(params dto.UserQueryParams) ([]dto.UserListRes
 
 func (s *userService) GetUserDetail(id string) (*dto.UserDetailResponse, error) {
 	user, err := s.user.GetUserByID(id)
-	switch {
-	case errors.Is(err, gorm.ErrRecordNotFound):
-		return nil, customErr.NewNotFound("user not found")
-	case err != nil:
-		return nil, customErr.NewInternal("failed to get user", err)
+	if err != nil || user == nil {
+		return nil, customErr.NewNotFound("user not found").WithContext("userID", id)
 	}
 
 	res := &dto.UserDetailResponse{
 		ID:       user.ID.String(),
 		Email:    user.Email,
 		Role:     user.Role,
+		Avatar:   user.AvatarURL,
 		Fullname: user.Fullname,
-		JoinedAt: user.CreatedAt.Format("2006-01-02"),
+		JoinedAt: user.CreatedAt,
 	}
 
 	return res, nil

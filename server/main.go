@@ -19,6 +19,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TICKETING APP SERVER
+// VERSION: 1.0.0
+// DEPLOYMENT: docker-compose
+// PORT: 5004
+// DESCRIPTION: This is a server for an event ticketing system that handles user registration, event management, and payment processing.
+
 func main() {
 	// ========== Configuration =================
 	config.InitConfiguration()
@@ -38,6 +44,16 @@ func main() {
 
 	// ========== Inisialisasi gin engine =======
 	r := gin.Default()
+
+	r.GET("/health", func(c *gin.Context) {
+		var startTime = time.Now()
+		c.JSON(200, gin.H{
+			"status":    "healthy",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"uptime":    time.Since(startTime).Seconds(),
+		})
+	})
+
 	err := r.SetTrustedProxies(config.GetTrustedProxies())
 	if err != nil {
 		log.Fatalf("Failed to set trusted proxies: %v", err)

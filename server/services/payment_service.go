@@ -61,16 +61,14 @@ func (s *paymentService) StripeWebhookNotification(event stripe.Event) error {
 	}
 
 	payment, err := s.repo.GetPaymentByID(paymentID)
-	if err != nil {
-		return fmt.Errorf("payment query failed: %w", err)
-	}
-	if payment == nil {
+	if err != nil || payment == nil {
 		return fmt.Errorf("payment not found")
 	}
 
 	if payment.Status == "paid" {
 		return nil
 	}
+
 	payment.Method = "card"
 	payment.Status = "paid"
 	now := time.Now().UTC()
@@ -93,7 +91,7 @@ func (s *paymentService) StripeWebhookNotification(event stripe.Event) error {
 	}
 
 	orderDetails, err := s.order.GetOrderDetails(order.ID.String())
-	if err != nil {
+	if err != nil || len(orderDetails) == 0 {
 		return fmt.Errorf("failed to fetch order details: %w", err)
 	}
 

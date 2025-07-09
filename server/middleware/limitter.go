@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"server/config"
-	customErr "server/errors"
-	"server/utils"
+	"server/errors"
 	"strings"
 	"time"
 
@@ -26,10 +25,8 @@ func RateLimiter(maxAttempts int, duration time.Duration) gin.HandlerFunc {
 
 		count, _ := config.RedisClient.Get(config.Ctx, key).Int()
 		if count >= maxAttempts {
-			utils.HandleServiceError(c,
-				customErr.NewTooManyRequest("Too many requests. Slow down baby."),
-				"Rate limit exceeded",
-			)
+			errors.NewTooManyRequests("Too many requests. Slow down baby.").
+				WithContext("ip_address", ip)
 			c.Abort()
 			return
 		}

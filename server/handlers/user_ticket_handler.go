@@ -21,7 +21,7 @@ func (h *UserTicketHandler) GetTicketByID(c *gin.Context) {
 	id := c.Param("id")
 	ticket, err := h.service.GetUserTicketByID(id)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, ticket)
@@ -30,7 +30,7 @@ func (h *UserTicketHandler) GetTicketByID(c *gin.Context) {
 func (h *UserTicketHandler) UseTicket(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.service.MarkTicketUsed(id); err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "ticket used successfully"})
@@ -43,7 +43,7 @@ func (h *UserTicketHandler) ValidateTicket(c *gin.Context) {
 	}
 	ticket, err := h.service.ValidateTicket(req.QRCode)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, ticket)
@@ -53,7 +53,7 @@ func (h *UserTicketHandler) PrintTicket(c *gin.Context) {
 	id := c.Param("id")
 	ticket, err := h.service.GetUserTicketByID(id)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 

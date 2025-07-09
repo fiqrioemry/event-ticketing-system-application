@@ -1,6 +1,7 @@
 package services
 
 import (
+	"log"
 	"server/dto"
 	customErr "server/errors"
 	"server/models"
@@ -14,10 +15,10 @@ import (
 
 type EventService interface {
 	DeleteEventByID(eventID string) error
-	CreateEvent(req dto.CreateEventRequest) error
+	CreateEvent(req *dto.CreateEventRequest) (*models.Event, error)
 	GetEventByID(id string) (*dto.EventDetailResponse, error)
 	GetAllEvents(params dto.EventQueryParams) ([]dto.EventResponse, *dto.PaginationResponse, error)
-	UpdateEvent(eventID string, req dto.UpdateEventRequest) error
+	UpdateEvent(eventID string, req *dto.UpdateEventRequest) error
 
 	// GET
 	GetAllTicketsByEventID(eventID string) ([]dto.TicketResponse, error)
@@ -32,72 +33,171 @@ func NewEventService(repo repositories.EventRepository, ticket repositories.Tick
 	return &eventService{repo, ticket}
 }
 
-func (s *eventService) CreateEvent(req dto.CreateEventRequest) error {
-	return s.repo.WithTx(func(tx *gorm.DB) error {
-		parsedDate, err := utils.ParseDate(req.Date)
-		if err != nil {
-			return err
-		}
+func (s *eventService) CreateEvent(req *dto.CreateEventRequest) (*models.Event, error) { // ✅ Return event
+	var createdEvent *models.Event
 
+	err := s.repo.WithTx(func(tx *gorm.DB) error {
+		// Date validation
 		today := time.Now().Truncate(24 * time.Hour)
-		if !parsedDate.After(today) {
-			return customErr.NewBadRequest("event date must be in the future")
+		if !req.Date.After(today) {
+			return customErr.NewBadRequest("Event date must be in the future")
 		}
 
+		// Time validation - Fix logic
+		if req.StartTime < 0 || req.StartTime > 23 {
+			return customErr.NewBadRequest("Start time must be between 0-23")
+		}
+
+		if req.EndTime < 1 || req.EndTime > 24 {
+			return customErr.NewBadRequest("End time must be between 1-24")
+		}
+
+		if req.StartTime >= req.EndTime {
+			return customErr.NewBadRequest("Start time must be before end time")
+		}
+
+		// ✅ Better duration validation
+		duration := req.EndTime - req.StartTime
+		if duration < 1 {
+			return customErr.NewBadRequest("Event duration must be at least 1 hour")
+		}
+
+		// ✅ Check title uniqueness
+		exists, err := s.repo.IsTitleTaken(req.Title)
+		if err != nil {
+			return customErr.NewInternalServerError("Failed to check title uniqueness", err)
+		}
+		if exists {
+			return customErr.NewConflict("Event title already exists")
+		}
+
+		// Create event
 		event := &models.Event{
 			ID:          uuid.New(),
 			Image:       req.ImageURL,
 			Title:       req.Title,
 			Description: req.Description,
 			Location:    req.Location,
-			Date:        parsedDate,
+			Date:        req.Date,
 			StartTime:   req.StartTime,
 			EndTime:     req.EndTime,
 			Status:      req.Status,
 		}
 
 		if err := tx.Create(event).Error; err != nil {
-			return customErr.NewInternal("failed to create event", err)
+			return customErr.NewInternalServerError("Failed to create event", err)
 		}
 
-		var tickets []models.Ticket
-		for _, cat := range req.Tickets {
-			if cat.Quota < 0 || cat.Price < 0 {
-				return customErr.NewBadRequest("invalid price or quota")
+		// Create tickets
+		if len(req.Tickets) > 0 {
+			var tickets []models.Ticket
+			for _, ticketReq := range req.Tickets {
+				tickets = append(tickets, models.Ticket{
+					ID:            uuid.New(),
+					EventID:       event.ID,
+					Name:          ticketReq.Name,
+					Price:         ticketReq.Price,
+					Quota:         ticketReq.Quota,
+					Limit:         ticketReq.Limit,
+					Refundable:    ticketReq.Refundable,
+					RefundPercent: ticketReq.RefundPercent,
+				})
 			}
 
-			tickets = append(tickets, models.Ticket{
-				ID:         uuid.New(),
-				EventID:    event.ID,
-				Name:       cat.Name,
-				Price:      cat.Price,
-				Quota:      cat.Quota,
-				Limit:      cat.Limit,
-				Refundable: cat.Refundable,
-			})
+			if err := tx.Create(&tickets).Error; err != nil {
+				return customErr.NewInternalServerError("Failed to create tickets", err)
+			}
 		}
 
-		if err := tx.Create(&tickets).Error; err != nil {
-			return customErr.NewInternal("failed to create tickets", err)
-		}
-
+		createdEvent = event
 		return nil
 	})
+
+	return createdEvent, err
 }
 
+func (s *eventService) UpdateEvent(eventID string, req *dto.UpdateEventRequest) error {
+	return s.repo.WithTx(func(tx *gorm.DB) error {
+		// Get event
+		event, err := s.repo.GetEventByID(eventID)
+		if err != nil {
+			return customErr.NewInternalServerError("Failed to get event", err)
+		}
+		if event == nil {
+			return customErr.NewNotFound("Event not found")
+		}
+
+		// Check if event can be updated
+		if event.Status == "done" || event.Status == "cancelled" {
+			return customErr.NewForbidden("Cannot update event with done/cancelled status")
+		}
+
+		// Date validation
+		today := time.Now().Truncate(24 * time.Hour)
+		if !req.Date.After(today) {
+			return customErr.NewBadRequest("Event date must be in the future")
+		}
+
+		// Time validation
+		if req.StartTime < 0 || req.StartTime > 23 {
+			return customErr.NewBadRequest("Start time must be between 0-23")
+		}
+		if req.EndTime < 1 || req.EndTime > 24 {
+			return customErr.NewBadRequest("End time must be between 1-24")
+		}
+		if req.StartTime >= req.EndTime {
+			return customErr.NewBadRequest("Start time must be before end time")
+		}
+
+		// Check if tickets sold (restrict major changes)
+		var totalSold int
+		for _, ticket := range event.Tickets {
+			totalSold += ticket.Sold
+		}
+
+		if totalSold > 0 {
+			// If tickets sold, restrict date/location changes
+			if !req.Date.Equal(event.Date) || req.Location != event.Location {
+				return customErr.NewBadRequest("Cannot update date/location after tickets are sold")
+			}
+		}
+
+		// Check title uniqueness (if changed)
+		if req.Title != event.Title {
+			exists, err := s.repo.IsTitleTaken(req.Title)
+			if err != nil {
+				return customErr.NewInternalServerError("Failed to check title uniqueness", err)
+			}
+			if exists {
+				return customErr.NewConflict("Event title already exists")
+			}
+		}
+
+		// Handle image update
+		if req.ImageURL != "" {
+			if err := utils.DeleteFromCloudinary(event.Image); err != nil {
+				log.Printf("Failed to delete old image: %v", err)
+			}
+			event.Image = req.ImageURL
+		}
+
+		// Update event fields
+		event.Title = req.Title
+		event.Description = req.Description
+		event.Location = req.Location
+		event.Date = req.Date
+		event.StartTime = req.StartTime
+		event.EndTime = req.EndTime
+		event.Status = req.Status
+
+		return tx.Save(event).Error // ✅ Use tx.Save instead of repo method
+	})
+}
 func (s *eventService) GetAllEvents(params dto.EventQueryParams) ([]dto.EventResponse, *dto.PaginationResponse, error) {
-
-	if params.Page <= 0 {
-		params.Page = 1
-	}
-
-	if params.Limit <= 0 {
-		params.Limit = 10
-	}
 
 	list, total, err := s.repo.GetAllEvents(params)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, customErr.NewInternalServerError("failed to retrieve events", err)
 
 	}
 
@@ -125,8 +225,8 @@ func (s *eventService) GetAllEvents(params dto.EventQueryParams) ([]dto.EventRes
 			StartTime:   item.StartTime,
 			EndTime:     item.EndTime,
 			Status:      item.Status,
-			Date:        item.Date.Format("2006-01-02"),
-			CreatedAt:   item.CreatedAt.Format("2006-01-02"),
+			Date:        item.Date,
+			CreatedAt:   item.CreatedAt,
 		})
 	}
 
@@ -136,11 +236,8 @@ func (s *eventService) GetAllEvents(params dto.EventQueryParams) ([]dto.EventRes
 
 func (s *eventService) GetEventByID(id string) (*dto.EventDetailResponse, error) {
 	event, err := s.repo.GetEventByID(id)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, customErr.NewNotFound("event not found")
-		}
-		return nil, customErr.NewInternal("failed to get event", err)
+	if event == nil || err != nil {
+		return nil, customErr.NewNotFound("event not found")
 	}
 
 	var tickets []dto.TicketResponse
@@ -156,25 +253,26 @@ func (s *eventService) GetEventByID(id string) (*dto.EventDetailResponse, error)
 			Refundable: ticket.Refundable,
 		})
 	}
+
 	return &dto.EventDetailResponse{
 		ID:          event.ID.String(),
 		Title:       event.Title,
 		Image:       event.Image,
 		Description: event.Description,
 		Location:    event.Location,
-		Date:        event.Date.Format("2006-01-02"),
+		Date:        event.Date,
 		StartTime:   event.StartTime,
 		EndTime:     event.EndTime,
 		Status:      event.Status,
 		Tickets:     tickets,
-		CreatedAt:   event.CreatedAt.Format("2006-01-02"),
+		CreatedAt:   event.CreatedAt,
 	}, nil
 }
 
 func (s *eventService) GetAllTicketsByEventID(eventID string) ([]dto.TicketResponse, error) {
 	tickets, err := s.ticket.GetAllTicketsByEventID(eventID)
 	if err != nil {
-		return nil, customErr.NewNotFound("ticket not found")
+		return nil, customErr.NewNotFound("event not found")
 	}
 
 	var responses []dto.TicketResponse
@@ -195,66 +293,9 @@ func (s *eventService) GetAllTicketsByEventID(eventID string) ([]dto.TicketRespo
 
 }
 
-func (s *eventService) UpdateEvent(eventID string, req dto.UpdateEventRequest) error {
-	return s.repo.WithTx(func(tx *gorm.DB) error {
-		event, err := s.repo.GetEventByID(eventID)
-		if err != nil {
-			return customErr.NewNotFound("event not found")
-		}
-
-		if event.Status == "done" || event.Status == "cancelled" {
-			return customErr.NewForbidden("cannot update event with done/cancelled status")
-		}
-
-		parsedDate, err := utils.ParseDate(req.Date)
-		if err != nil {
-			return err
-		}
-
-		today := time.Now().Truncate(24 * time.Hour)
-		if !parsedDate.After(today) {
-			return customErr.NewBadRequest("event date must be in the future")
-		}
-
-		for _, ticket := range event.Tickets {
-			if ticket.Sold > 0 && (!parsedDate.Equal(event.Date) || req.Location != event.Location) {
-				return customErr.NewBadRequest("cannot update date/location after tickets sold")
-			}
-
-		}
-
-		if req.Title != event.Title {
-			taken, err := s.repo.IsTitleTaken(req.Title)
-			if err != nil {
-				return customErr.NewInternal("title check failed", err)
-			}
-			if taken {
-				return customErr.NewBadRequest("event title already exists")
-			}
-		}
-
-		if req.ImageURL != "" {
-			if err := utils.DeleteFromCloudinary(event.Image); err != nil {
-				return customErr.NewInternal("failed to delete old image", err)
-			}
-			event.Image = req.ImageURL
-		}
-
-		event.Title = req.Title
-		event.Date = parsedDate
-		event.Status = req.Status
-		event.Location = req.Location
-		event.EndTime = req.EndTime
-		event.StartTime = req.StartTime
-		event.Description = req.Description
-
-		return s.repo.UpdateEvent(event)
-	})
-}
-
 func (s *eventService) DeleteEventByID(eventID string) error {
 	event, err := s.repo.GetEventByID(eventID)
-	if err != nil {
+	if event == nil || err != nil {
 		return customErr.NewNotFound("event not found")
 	}
 
@@ -271,7 +312,7 @@ func (s *eventService) DeleteEventByID(eventID string) error {
 	if event.Image != "" {
 		err = utils.DeleteFromCloudinary(event.Image)
 		if err != nil {
-			return customErr.NewInternal("failed to delete image", err)
+			return customErr.NewInternalServerError("failed to delete image", err)
 		}
 	}
 

@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"server/dto"
 	"server/models"
 
@@ -43,12 +42,9 @@ func (r *eventRepository) DeleteEventByID(id string) error {
 }
 
 func (r *eventRepository) GetEventByID(id string) (*models.Event, error) {
-	var data models.Event
-	err := r.db.Preload("Tickets").First(&data, "id = ?", id).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
-	return &data, err
+	var event models.Event
+	err := r.db.Preload("Tickets").First(&event, "id = ?", id).Error
+	return &event, err
 }
 
 func (r *eventRepository) GetAllEvents(params dto.EventQueryParams) ([]models.Event, int64, error) {
@@ -97,7 +93,6 @@ func (r *eventRepository) GetAllEvents(params dto.EventQueryParams) ([]models.Ev
 		params.Limit = 10
 	}
 
-	// 5. Pagination
 	offset := (params.Page - 1) * params.Limit
 
 	if err := db.Count(&count).Error; err != nil {

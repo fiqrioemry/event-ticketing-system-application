@@ -26,9 +26,10 @@ func NewWithdrawalService(repo repositories.WithdrawalRepository) WithdrawalServ
 
 func (s *withdrawalService) CreateWithdrawal(userID string, req dto.CreateWithdrawalRequest) (*dto.WithdrawalResponse, error) {
 	user, err := s.repo.GetUserByID(userID)
-	if err != nil {
-		return nil, err
+	if err != nil || user == nil {
+		return nil, customErr.NewNotFound("user not found").WithContext("userID", userID)
 	}
+
 	if user.Balance < req.Amount {
 		return nil, customErr.NewBadRequest("insufficient balance")
 	}
@@ -50,8 +51,9 @@ func (s *withdrawalService) CreateWithdrawal(userID string, req dto.CreateWithdr
 func (s *withdrawalService) GetAllWithdrawals() ([]dto.WithdrawalResponse, error) {
 	list, err := s.repo.GetAllWithdrawals()
 	if err != nil {
-		return nil, err
+		return nil, customErr.NewInternalServerError("failed to retrieve withdrawals", err)
 	}
+
 	var res []dto.WithdrawalResponse
 	for _, w := range list {
 		res = append(res, *toWithdrawalDTO(&w))
@@ -61,12 +63,14 @@ func (s *withdrawalService) GetAllWithdrawals() ([]dto.WithdrawalResponse, error
 
 func (s *withdrawalService) ReviewWithdrawal(id, adminID, status string) (*dto.WithdrawalResponse, error) {
 	w, err := s.repo.GetWithdrawalByID(id)
-	if err != nil {
-		return nil, err
+	if err != nil || w == nil {
+		return nil, customErr.NewNotFound("withdrawal request not found").WithContext("withdrawalID", id)
 	}
+
 	if w.Status != "pending" {
 		return nil, customErr.NewBadRequest("withdrawal already reviewed")
 	}
+
 	w.Status = status
 	w.ApprovedAt = &time.Time{}
 	*w.ApprovedAt = time.Now()
@@ -75,7 +79,6 @@ func (s *withdrawalService) ReviewWithdrawal(id, adminID, status string) (*dto.W
 		return nil, err
 	}
 
-	// reduce balance only if approved
 	if status == "approved" {
 		_ = s.repo.DecreaseUserBalance(w.UserID.String(), w.Amount)
 	}
@@ -85,16 +88,14 @@ func (s *withdrawalService) ReviewWithdrawal(id, adminID, status string) (*dto.W
 
 func toWithdrawalDTO(w *models.WithdrawalRequest) *dto.WithdrawalResponse {
 	res := &dto.WithdrawalResponse{
-		ID:        w.ID.String(),
-		UserID:    w.UserID.String(),
-		Amount:    w.Amount,
-		Status:    w.Status,
-		Reason:    w.Reason,
-		CreatedAt: w.CreatedAt.Format(time.RFC3339),
+		ID:         w.ID.String(),
+		UserID:     w.UserID.String(),
+		Amount:     w.Amount,
+		Status:     w.Status,
+		Reason:     w.Reason,
+		CreatedAt:  w.CreatedAt,
+		ApprovedAt: w.ApprovedAt,
 	}
 
-	if w.ApprovedAt != nil {
-		res.ApprovedAt = w.ApprovedAt.Format(time.RFC3339)
-	}
 	return res
 }

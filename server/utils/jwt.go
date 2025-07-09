@@ -42,7 +42,7 @@ func GenerateRefreshToken(userID string) (string, error) {
 }
 
 func DecodeAccessToken(tokenStr string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (any, error) {
 		return accessTokenSecret, nil
 	})
 	if err != nil {
@@ -56,7 +56,7 @@ func DecodeAccessToken(tokenStr string) (*Claims, error) {
 }
 
 func DecodeRefreshToken(tokenStr string) (string, error) {
-	token, err := jwt.ParseWithClaims(tokenStr, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &jwt.RegisteredClaims{}, func(token *jwt.Token) (any, error) {
 		return refreshTokenSecret, nil
 	})
 	if err != nil {
@@ -71,7 +71,7 @@ func DecodeRefreshToken(tokenStr string) (string, error) {
 
 func SetRefreshTokenCookie(c *gin.Context, refreshToken string) {
 	domain := os.Getenv("COOKIE_DOMAIN")
-	c.SetCookie("refreshToken", refreshToken, 7*24*3600, "/", domain, true, true)
+	c.SetCookie("refreshToken", refreshToken, 7*24*3600, "/", domain, false, false)
 }
 
 func ClearRefreshTokenCookie(c *gin.Context) {
@@ -81,14 +81,14 @@ func ClearRefreshTokenCookie(c *gin.Context) {
 		-1,
 		"/",
 		"",
-		true,
-		true,
+		false,
+		false,
 	)
 }
 
 func SetAccessTokenCookie(c *gin.Context, accessToken string) {
 	domain := os.Getenv("COOKIE_DOMAIN")
-	c.SetCookie("accessToken", accessToken, 3600, "/", domain, true, true)
+	c.SetCookie("accessToken", accessToken, 3600, "/", domain, false, false)
 }
 
 func ClearAccessTokenCookie(c *gin.Context) {
@@ -98,7 +98,7 @@ func ClearAccessTokenCookie(c *gin.Context) {
 		-1,
 		"/",
 		"",
-		true,
-		true,
+		false,
+		false,
 	)
 }

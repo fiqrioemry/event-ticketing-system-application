@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"server/models"
 	"time"
 
@@ -29,10 +28,7 @@ func (r *paymentRepository) Create(payment *models.Payment) error {
 func (r *paymentRepository) GetPaymentByID(paymentID string) (*models.Payment, error) {
 	var payment models.Payment
 	err := r.db.First(&payment, "id = ?", paymentID).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
-	return &payment, nil
+	return &payment, err
 }
 
 func (r *paymentRepository) UpdatePayment(payment *models.Payment) error {

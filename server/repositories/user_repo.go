@@ -35,9 +35,6 @@ func (r *userRepository) UpdateUser(data *models.User) error {
 func (r *userRepository) GetUserByID(id string) (*models.User, error) {
 	var data models.User
 	err := r.db.First(&data, "id = ?", id).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
 	return &data, err
 }
 
@@ -47,9 +44,8 @@ func (r *userRepository) GetUserByEmail(email string) (*models.User, error) {
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
-	return &user, nil
+	return &user, err
 }
-
 func (r *userRepository) GetAllUsers(params dto.UserQueryParams) ([]models.User, int64, error) {
 	var users []models.User
 	var count int64

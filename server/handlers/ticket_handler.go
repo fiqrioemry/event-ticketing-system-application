@@ -6,6 +6,7 @@ import (
 	"server/utils"
 
 	"net/http"
+	customErr "server/errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,14 +20,19 @@ func NewTicketHandler(service services.TicketService) *TicketHandler {
 }
 
 func (h *TicketHandler) CreateTicket(c *gin.Context) {
-	var req dto.CreateTicketRequest
+	eventID := c.Param("id")
+	if eventID == "" {
+		utils.HandleError(c, customErr.NewBadRequest("Event ID is required"))
+		return
+	}
 
+	var req dto.CreateTicketRequest
 	if !utils.BindAndValidateJSON(c, &req) {
 		return
 	}
 
-	if err := h.service.CreateTicket(req); err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+	if err := h.service.CreateTicket(req, eventID); err != nil {
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -42,7 +48,7 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 	}
 
 	if err := h.service.UpdateTicket(id, req); err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -54,7 +60,7 @@ func (h *TicketHandler) GetTicketByID(c *gin.Context) {
 
 	ticket, err := h.service.GetTicketByID(ticketID)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -65,7 +71,7 @@ func (h *TicketHandler) DeleteTicket(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := h.service.DeleteTicket(id); err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 

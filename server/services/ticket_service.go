@@ -11,33 +11,34 @@ import (
 
 type TicketService interface {
 	DeleteTicket(id string) error
-	CreateTicket(req dto.CreateTicketRequest) error
+	CreateTicket(req dto.CreateTicketRequest, eventID string) error
 	GetTicketByID(id string) (*dto.TicketResponse, error)
 	UpdateTicket(id string, req dto.UpdateTicketRequest) error
 }
 
 type ticketService struct {
-	repo repositories.TicketRepository
+	repo  repositories.TicketRepository
+	event repositories.EventRepository
 }
 
-func NewTicketService(repo repositories.TicketRepository) TicketService {
-	return &ticketService{repo}
+func NewTicketService(repo repositories.TicketRepository, event repositories.EventRepository) TicketService {
+	return &ticketService{repo, event}
 }
 
-func (s *ticketService) CreateTicket(req dto.CreateTicketRequest) error {
+func (s *ticketService) CreateTicket(req dto.CreateTicketRequest, eventID string) error {
 	if req.Price < 0 || req.Quota < 0 || req.Limit < 0 {
 		return customErr.NewBadRequest("invalid input: price, quota, or limit must not be negative")
 	}
 
-	ticket, err := s.repo.GetTicketByEventID(req.EventID)
-	if err != nil {
-		return customErr.NewInternal("failed to check existing ticket", err)
+	event, err := s.event.GetEventByID(eventID)
+	if err != nil || event == nil {
+		return customErr.NewNotFound("event not found")
 	}
 
 	newTicket := &models.Ticket{
 		ID:         uuid.New(),
 		Name:       req.Name,
-		EventID:    ticket.EventID,
+		EventID:    event.ID,
 		Price:      req.Price,
 		Limit:      req.Limit,
 		Quota:      req.Quota,
@@ -46,7 +47,7 @@ func (s *ticketService) CreateTicket(req dto.CreateTicketRequest) error {
 	}
 
 	if err := s.repo.CreateTicket(newTicket); err != nil {
-		return customErr.NewInternal("failed to create ticket", err)
+		return customErr.NewInternalServerError("failed to create ticket", err)
 	}
 
 	return nil
@@ -54,8 +55,8 @@ func (s *ticketService) CreateTicket(req dto.CreateTicketRequest) error {
 
 func (s *ticketService) GetTicketByID(id string) (*dto.TicketResponse, error) {
 	ticket, err := s.repo.GetTicketByID(id)
-	if err != nil {
-		return nil, customErr.NewNotFound("ticket not found")
+	if err != nil || ticket == nil {
+		return nil, customErr.NewNotFound("ticket not found").WithContext("ticketID", id)
 	}
 
 	return &dto.TicketResponse{
@@ -70,10 +71,9 @@ func (s *ticketService) GetTicketByID(id string) (*dto.TicketResponse, error) {
 }
 
 func (s *ticketService) DeleteTicket(id string) error {
-
 	ticket, err := s.repo.GetTicketByID(id)
-	if err != nil {
-		return customErr.NewNotFound("ticket not found")
+	if err != nil || ticket == nil {
+		return customErr.NewNotFound("ticket not found").WithContext("ticketID", id)
 	}
 
 	if ticket.Sold > 0 {
@@ -85,8 +85,8 @@ func (s *ticketService) DeleteTicket(id string) error {
 
 func (s *ticketService) UpdateTicket(id string, req dto.UpdateTicketRequest) error {
 	ticket, err := s.repo.GetTicketByID(id)
-	if err != nil {
-		return customErr.NewNotFound("ticket not found")
+	if err != nil || ticket == nil {
+		return customErr.NewNotFound("ticket not found").WithContext("ticketID", id)
 	}
 
 	if req.Price < 0 || req.Quota < 0 || req.Limit < 0 {

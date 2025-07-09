@@ -18,13 +18,13 @@ func NewAuthHandler(service services.AuthService) *AuthHandler {
 }
 
 func (h *AuthHandler) ResendOTP(c *gin.Context) {
-	var req dto.SendOTPRequest
+	var req dto.ResendOTPRequest
 	if !utils.BindAndValidateJSON(c, &req) {
 		return
 	}
 
-	if err := h.service.SendOTP(req.Email); err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+	if err := h.service.ResendOTP(req.Email); err != nil {
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -38,7 +38,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	if err := h.service.Register(&req); err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "OTP sent to your email"})
@@ -52,7 +52,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 
 	tokens, err := h.service.VerifyOTP(req.Email, req.OTP)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
@@ -68,16 +68,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	tokens, err := h.service.Login(&req)
+	response, err := h.service.Login(&req)
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
-	utils.SetAccessTokenCookie(c, tokens.AccessToken)
-	utils.SetRefreshTokenCookie(c, tokens.RefreshToken)
+	utils.SetAccessTokenCookie(c, response.AccessToken)
+	utils.SetRefreshTokenCookie(c, response.RefreshToken)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Login successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Login successfully", "user": response.User})
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
@@ -89,13 +89,13 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	refreshToken, err := c.Cookie("refreshToken")
 	if err != nil {
-		utils.HandleServiceError(c, err, err.Error())
+		utils.HandleError(c, err)
 		return
 	}
 
 	accessToken, err := h.service.RefreshToken(c, refreshToken)
 	if err != nil {
-		utils.HandleServiceError(c, err, "Token refresh failed")
+		utils.HandleError(c, err)
 		return
 	}
 

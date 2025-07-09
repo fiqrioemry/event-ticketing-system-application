@@ -40,18 +40,15 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 
 	_, err := s.repo.WithTx(func(tx *gorm.DB) (string, error) {
 		user, err := s.user.GetUserByID(userID)
-		if err != nil {
+		if user == nil || err != nil {
 			return "", customErr.NewNotFound("user not found")
 		}
 
 		event, err := s.event.GetEventByID(req.EventID)
-		if err != nil {
-			return "", customErr.NewInternal("failed to get event", err)
-		}
-
-		if event == nil {
+		if event == nil || err != nil {
 			return "", customErr.NewNotFound("event not found")
 		}
+
 		if event.Status != "active" && event.Status != "ongoing" {
 			return "", customErr.NewBadRequest("event is not available for ordering")
 		}
@@ -73,9 +70,10 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 
 		for _, item := range req.OrderDetails {
 			ticket, err := s.ticket.GetTicketByID(item.TicketID)
-			if err != nil {
-				return "", customErr.NewNotFound("ticket not found")
+			if ticket == nil || err != nil {
+				return "", customErr.NewNotFound("ticket not found: " + item.TicketID)
 			}
+
 			if ticket.Quota < item.Quantity {
 				return "", customErr.NewBadRequest("not enough quota for ticket: " + ticket.Name)
 			}
@@ -85,7 +83,7 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 
 			ticket.Quota -= item.Quantity
 			if err := tx.Save(ticket).Error; err != nil {
-				return "", customErr.NewInternal("failed to update ticket quota", err)
+				return "", customErr.NewInternalServerError("failed to update ticket quota", err)
 			}
 
 			subtotal := ticket.Price * float64(item.Quantity)
@@ -100,7 +98,7 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 				Price:      ticket.Price,
 			}
 			if err := tx.Create(orderDetail).Error; err != nil {
-				return "", customErr.NewInternal("failed to create order detail", err)
+				return "", customErr.NewInternalServerError("failed to create order detail", err)
 			}
 
 			stripeItems = append(stripeItems, &stripe.CheckoutSessionLineItemParams{
@@ -117,7 +115,7 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 
 		order.TotalPrice = totalPrice
 		if err := tx.Create(order).Error; err != nil {
-			return "", customErr.NewInternal("failed to create order", err)
+			return "", customErr.NewInternalServerError("failed to create order", err)
 		}
 
 		paymentID := uuid.New()
@@ -132,7 +130,7 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 			Amount:   totalPrice,
 		}
 		if err := tx.Create(payment).Error; err != nil {
-			return "", customErr.NewInternal("failed to create payment", err)
+			return "", customErr.NewInternalServerError("failed to create payment", err)
 		}
 
 		params := &stripe.CheckoutSessionParams{
@@ -150,7 +148,7 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 		}
 		sess, err := session.New(params)
 		if err != nil {
-			return "", customErr.NewInternal("failed to create stripe session", err)
+			return "", customErr.NewInternalServerError("failed to create stripe session", err)
 		}
 
 		result = &dto.CheckoutSessionResponse{
@@ -171,7 +169,7 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 func (s *orderService) GetMyOrders(userID string, params dto.OrderQueryParams) ([]dto.OrderResponse, *dto.PaginationResponse, error) {
 	orders, total, err := s.repo.GetMyOrders(userID, params)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, customErr.NewInternalServerError("failed to retrieve orders", err)
 	}
 
 	var results []dto.OrderResponse
@@ -186,7 +184,7 @@ func (s *orderService) GetMyOrders(userID string, params dto.OrderQueryParams) (
 			Phone:      o.Phone,
 			TotalPrice: o.TotalPrice,
 			Status:     o.Status,
-			CreatedAt:  o.CreatedAt.Format("2006-01-02"),
+			CreatedAt:  o.CreatedAt,
 		})
 	}
 
@@ -196,11 +194,8 @@ func (s *orderService) GetMyOrders(userID string, params dto.OrderQueryParams) (
 
 func (s *orderService) GetOrderDetail(orderID string) ([]dto.OrderDetailResponse, error) {
 	orderDetails, err := s.repo.GetOrderDetails(orderID)
-	if err != nil {
-		return nil, customErr.NewInternal("failed to get order details", err)
-	}
-	if len(orderDetails) == 0 {
-		return nil, customErr.NewNotFound("order detail not found")
+	if err != nil || len(orderDetails) == 0 {
+		return nil, customErr.NewNotFound("order details not found").WithContext("orderID", orderID)
 	}
 
 	var responses []dto.OrderDetailResponse
@@ -211,7 +206,7 @@ func (s *orderService) GetOrderDetail(orderID string) ([]dto.OrderDetailResponse
 			TicketID:   detail.TicketID.String(),
 			Quantity:   detail.Quantity,
 			Price:      detail.Price,
-			CreatedAt:  detail.CreatedAt.Format("2006-01-02"),
+			CreatedAt:  detail.CreatedAt,
 		})
 	}
 
@@ -221,17 +216,13 @@ func (s *orderService) GetOrderDetail(orderID string) ([]dto.OrderDetailResponse
 func (s *orderService) GetUserTicketsByOrder(orderID, userID string) ([]dto.UserTicketResponse, error) {
 
 	order, err := s.repo.GetOrderByID(orderID)
-	if order == nil {
-		return nil, customErr.NewNotFound("order not found")
-	}
-
-	if err != nil {
-		return nil, customErr.NewInternal("failed to get order", err)
+	if order == nil || err != nil {
+		return nil, customErr.NewNotFound("order not found").WithContext("orderID", orderID)
 	}
 
 	userTickets, err := s.userTicket.GetUserTickets(order.EventID.String(), userID)
-	if err != nil {
-		return nil, customErr.NewInternal("failed to get user tickets", err)
+	if err != nil || len(userTickets) == 0 {
+		return nil, customErr.NewNotFound("user tickets not found").WithContext("orderID", orderID)
 	}
 
 	var result []dto.UserTicketResponse
@@ -253,19 +244,20 @@ func (s *orderService) GetUserTicketsByOrder(orderID, userID string) ([]dto.User
 func (s *orderService) RefundOrder(orderID string, userID string, reason string) (*dto.RefundOrderResponse, error) {
 	order, err := s.repo.GetOrderByID(orderID)
 	if err != nil || order == nil {
-		return nil, customErr.NewNotFound("order not found")
+		return nil, customErr.NewNotFound("order not found").WithContext("orderID", orderID)
 	}
+
 	if order.UserID.String() != userID {
 		return nil, customErr.NewForbidden("not your order")
 	}
+
 	if order.Status != "paid" || order.IsRefunded {
 		return nil, customErr.NewBadRequest("order not refundable")
 	}
 
 	eventDate := order.Event.Date
-	// prevent refund on event day
-	dayNow := time.Now().In(time.Local).Format("2006-01-02")
-	dayEvent := eventDate.Format("2006-01-02")
+	dayNow := time.Now().In(time.Local)
+	dayEvent := eventDate
 	if dayNow == dayEvent {
 		return nil, customErr.NewBadRequest("cannot refund on event day")
 	}
@@ -275,13 +267,8 @@ func (s *orderService) RefundOrder(orderID string, userID string, reason string)
 
 	for _, d := range details {
 		ticket, err := s.ticket.GetTicketByID(d.TicketID.String())
-
-		if err != nil {
-			return nil, customErr.NewInternal("failed to get ticket", err)
-		}
-
-		if ticket == nil {
-			return nil, customErr.NewNotFound("ticket not found: ")
+		if ticket == nil || err != nil {
+			return nil, customErr.NewNotFound("ticket not found: "+d.TicketID.String()).WithContext("orderID", orderID)
 		}
 
 		if !ticket.Refundable {
@@ -295,7 +282,7 @@ func (s *orderService) RefundOrder(orderID string, userID string, reason string)
 
 	used, err := s.repo.HasUsedTicket(orderID)
 	if err != nil {
-		return nil, customErr.NewInternal("failed to check user tickets", err)
+		return nil, customErr.NewInternalServerError("failed to check user tickets", err)
 	}
 	if used {
 		return nil, customErr.NewBadRequest("you have already used one of the tickets")
@@ -312,16 +299,14 @@ func (s *orderService) RefundOrder(orderID string, userID string, reason string)
 		return nil, err
 	}
 
-	// update payment
 	s.repo.UpdatePaymentStatus(order.ID.String(), "refunded")
-	// update user balance
 	s.repo.IncreaseUserBalance(userID, totalRefund)
 
 	user, _ := s.user.GetUserByID(userID)
 	return &dto.RefundOrderResponse{
 		OrderID:      order.ID.String(),
 		RefundAmount: totalRefund,
-		RefundedAt:   now.Format(time.RFC3339),
+		RefundedAt:   now,
 		UserBalance:  user.Balance,
 	}, nil
 }
