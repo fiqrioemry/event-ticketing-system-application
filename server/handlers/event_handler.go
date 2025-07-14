@@ -9,6 +9,8 @@ import (
 	"server/services"
 	"server/utils"
 
+	"github.com/fiqrioemry/go-api-toolkit/pagination"
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
 )
@@ -26,12 +28,21 @@ func (h *EventHandler) GetAllEvents(c *gin.Context) {
 	if !utils.BindAndValidateForm(c, &params) {
 		return
 	}
-	data, pagination, err := h.service.GetAllEvents(params)
-	if err != nil {
-		utils.HandleError(c, err)
+
+	if err := pagination.BindAndSetDefaults(c, &params); err != nil {
+		response.Error(c, response.BadRequest(err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"events": data, "pagination": pagination})
+
+	data, total, err := h.service.GetAllEvents(params)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	pag := pagination.Build(params.Page, params.Limit, total)
+
+	response.OKWithPagination(c, "events retrieved successfully", data, pag)
 }
 
 func (h *EventHandler) GetEventByID(c *gin.Context) {

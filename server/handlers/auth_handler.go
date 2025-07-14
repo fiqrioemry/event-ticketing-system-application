@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"net/http"
 	"server/dto"
 	"server/services"
 	"server/utils"
 
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,11 +24,11 @@ func (h *AuthHandler) ResendOTP(c *gin.Context) {
 	}
 
 	if err := h.service.ResendOTP(req.Email); err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "OTP sent to email"})
+	response.OK(c, "OTP sent to email successfully", nil)
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
@@ -38,10 +38,10 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	if err := h.service.Register(&req); err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "OTP sent to your email"})
+	response.OK(c, "OTP sent to email successfully", nil)
 }
 
 func (h *AuthHandler) VerifyOTP(c *gin.Context) {
@@ -52,14 +52,14 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 
 	tokens, err := h.service.VerifyOTP(req.Email, req.OTP)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
 	utils.SetAccessTokenCookie(c, tokens.AccessToken)
 	utils.SetRefreshTokenCookie(c, tokens.RefreshToken)
 
-	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
+	response.OK(c, "OTP verified successfully", tokens)
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -68,22 +68,23 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	response, err := h.service.Login(&req)
+	result, err := h.service.Login(&req)
 	if err != nil {
 		utils.HandleError(c, err)
 		return
 	}
 
-	utils.SetAccessTokenCookie(c, response.AccessToken)
-	utils.SetRefreshTokenCookie(c, response.RefreshToken)
+	utils.SetAccessTokenCookie(c, result.AccessToken)
+	utils.SetRefreshTokenCookie(c, result.RefreshToken)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Login successfully", "user": response.User})
+	response.OK(c, "Login successfully", result.User)
+
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
 	utils.ClearAccessTokenCookie(c)
 	utils.ClearRefreshTokenCookie(c)
-	c.JSON(http.StatusOK, gin.H{"message": "Logout successfully"})
+	response.OK(c, "Logout successfully", nil)
 }
 
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
@@ -101,5 +102,6 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 
 	utils.SetAccessTokenCookie(c, accessToken)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Token refreshed successfully"})
+	response.OK(c, "Token refreshed successfully", accessToken)
+
 }

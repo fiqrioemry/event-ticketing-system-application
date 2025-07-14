@@ -9,6 +9,7 @@ import (
 	"server/utils"
 	"time"
 
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -17,7 +18,7 @@ type EventService interface {
 	DeleteEventByID(eventID string) error
 	CreateEvent(req *dto.CreateEventRequest) (*models.Event, error)
 	GetEventByID(id string) (*dto.EventDetailResponse, error)
-	GetAllEvents(params dto.EventQueryParams) ([]dto.EventResponse, *dto.PaginationResponse, error)
+	GetAllEvents(params dto.EventQueryParams) ([]dto.EventResponse, int, error)
 	UpdateEvent(eventID string, req *dto.UpdateEventRequest) error
 
 	// GET
@@ -193,11 +194,11 @@ func (s *eventService) UpdateEvent(eventID string, req *dto.UpdateEventRequest) 
 		return tx.Save(event).Error // ✅ Use tx.Save instead of repo method
 	})
 }
-func (s *eventService) GetAllEvents(params dto.EventQueryParams) ([]dto.EventResponse, *dto.PaginationResponse, error) {
+func (s *eventService) GetAllEvents(params dto.EventQueryParams) ([]dto.EventResponse, int, error) {
 
 	list, total, err := s.repo.GetAllEvents(params)
 	if err != nil {
-		return nil, nil, customErr.NewInternalServerError("failed to retrieve events", err)
+		return nil, 0, response.NewInternalServerError("Failed to get events", err)
 
 	}
 
@@ -230,8 +231,7 @@ func (s *eventService) GetAllEvents(params dto.EventQueryParams) ([]dto.EventRes
 		})
 	}
 
-	pagination := utils.Paginate(total, params.Page, params.Limit)
-	return result, pagination, nil
+	return result, int(total), nil
 }
 
 func (s *eventService) GetEventByID(id string) (*dto.EventDetailResponse, error) {
