@@ -1,7 +1,7 @@
 package config
 
 func InitConfiguration() {
-	LoadEnv()
+	LoadConfig()
 	InitRedis()
 	InitMailer()
 	InitDatabase()

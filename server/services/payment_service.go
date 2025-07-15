@@ -3,9 +3,10 @@ package services
 import (
 	"encoding/json"
 	"fmt"
-	"server/models"
-	"server/repositories"
 	"time"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/models"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
 
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v75"

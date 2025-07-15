@@ -1,11 +1,14 @@
 package handlers
 
 import (
-	"net/http"
-	"server/dto"
-	"server/services"
-	"server/utils"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
+
+	"github.com/fiqrioemry/go-api-toolkit/pagination"
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,12 +23,13 @@ func NewUserHandler(service services.UserService) *UserHandler {
 func (h *UserHandler) GetMyProfile(c *gin.Context) {
 	userID := utils.MustGetUserID(c)
 
-	response, err := h.service.GetUserProfile(userID)
+	userProfile, err := h.service.GetUserProfile(userID)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, response)
+
+	response.OK(c, "Profile retrieved successfully", userProfile)
 }
 
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
@@ -36,20 +40,22 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	avatarURL, err := utils.UploadImageWithValidation(req.Avatar)
+	if req.Avatar != nil && req.Avatar.Filename != "" {
+		imageURL, err := utils.UploadImageWithValidation(req.Avatar)
+		if err != nil {
+			response.Error(c, err)
+			return
+		}
+		req.AvatarURL = imageURL
+	}
+
+	updatedProfile, err := h.service.UpdateUserDetail(userID, &req)
 	if err != nil {
-		utils.HandleError(c, err)
+		utils.CleanupImageOnError(req.AvatarURL)
+		response.Error(c, err)
 		return
 	}
-	req.AvatarURL = avatarURL
-
-	if err := h.service.UpdateUserDetail(userID, &req); err != nil {
-		utils.CleanupImageOnError(avatarURL)
-		utils.HandleError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
+	response.OK(c, "Profile updated successfully", updatedProfile)
 }
 
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
@@ -58,16 +64,20 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 		return
 	}
 
-	users, pagination, err := h.service.GetAllUsers(params)
-	if err != nil {
-		utils.HandleError(c, err)
+	if err := pagination.BindAndSetDefaults(c, &params); err != nil {
+		response.Error(c, response.BadRequest(err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data":       users,
-		"pagination": pagination,
-	})
+	users, total, err := h.service.GetAllUsers(params)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	pagination := pagination.Build(params.Page, params.Limit, total)
+
+	response.OKWithPagination(c, "Users retrieved successfully", users, pagination)
 }
 
 func (h *UserHandler) GetUserDetail(c *gin.Context) {
@@ -75,8 +85,9 @@ func (h *UserHandler) GetUserDetail(c *gin.Context) {
 	user, err := h.service.GetUserDetail(id)
 
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, user)
+
+	response.OK(c, "User details retrieved successfully", user)
 }

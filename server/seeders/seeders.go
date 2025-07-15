@@ -3,7 +3,7 @@ package seeders
 import (
 	"time"
 
-	"server/models"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/models"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"

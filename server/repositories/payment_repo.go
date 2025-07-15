@@ -1,8 +1,9 @@
 package repositories
 
 import (
-	"server/models"
 	"time"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/models"
 
 	"gorm.io/gorm"
 )

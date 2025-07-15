@@ -1,19 +1,19 @@
 package services
 
 import (
-	"server/dto"
-	customErr "server/errors"
-	"server/repositories"
-	"server/utils"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
+
+	"github.com/fiqrioemry/go-api-toolkit/response"
 )
 
 type ReportService interface {
 	GetSummary() (*dto.SummaryReportResponse, error)
-	GetOrderReports(params dto.OrderReportQueryParams) ([]dto.OrderReportResponse, *dto.PaginationResponse, error)
-	GetTicketSalesReports(params dto.TicketReportQueryParams) ([]dto.TicketSalesReportResponse, *dto.PaginationResponse, error)
-	GetPaymentReports(params dto.PaymentReportQueryParams) ([]dto.PaymentReportResponse, *dto.PaginationResponse, error)
-	GetRefundReports(params dto.RefundReportQueryParams) ([]dto.RefundReportResponse, *dto.PaginationResponse, error)
-	GetWithdrawalReports(params dto.WithdrawalReportQueryParams) ([]dto.WithdrawalReportResponse, *dto.PaginationResponse, error)
+	GetOrderReports(params dto.OrderReportQueryParams) ([]dto.OrderReportResponse, int, error)
+	GetRefundReports(params dto.RefundReportQueryParams) ([]dto.RefundReportResponse, int, error)
+	GetPaymentReports(params dto.PaymentReportQueryParams) ([]dto.PaymentReportResponse, int, error)
+	GetTicketSalesReports(params dto.TicketReportQueryParams) ([]dto.TicketSalesReportResponse, int, error)
+	GetWithdrawalReports(params dto.WithdrawalReportQueryParams) ([]dto.WithdrawalReportResponse, int, error)
 }
 
 type reportService struct {
@@ -28,10 +28,10 @@ func (s *reportService) GetSummary() (*dto.SummaryReportResponse, error) {
 	return s.repo.GetSummary()
 }
 
-func (s *reportService) GetOrderReports(params dto.OrderReportQueryParams) ([]dto.OrderReportResponse, *dto.PaginationResponse, error) {
+func (s *reportService) GetOrderReports(params dto.OrderReportQueryParams) ([]dto.OrderReportResponse, int, error) {
 	orders, total, err := s.repo.GetOrderReports(params)
 	if err != nil {
-		return nil, nil, customErr.NewInternalServerError("failed to retrieve order reports", err)
+		return nil, 0, response.NewInternalServerError("failed to retrieve order reports", err)
 	}
 
 	var reports []dto.OrderReportResponse
@@ -47,15 +47,14 @@ func (s *reportService) GetOrderReports(params dto.OrderReportQueryParams) ([]dt
 		})
 	}
 
-	pagination := utils.Paginate(total, params.Page, params.Limit)
-	return reports, pagination, nil
+	return reports, int(total), nil
 }
 
-func (s *reportService) GetTicketSalesReports(params dto.TicketReportQueryParams) ([]dto.TicketSalesReportResponse, *dto.PaginationResponse, error) {
+func (s *reportService) GetTicketSalesReports(params dto.TicketReportQueryParams) ([]dto.TicketSalesReportResponse, int, error) {
 
 	list, total, err := s.repo.GetTicketSalesReports(params)
 	if err != nil {
-		return nil, nil, customErr.NewInternalServerError("failed to retrieve ticket sales reports", err)
+		return nil, 0, response.NewInternalServerError("failed to retrieve ticket sales reports", err)
 	}
 
 	var reports []dto.TicketSalesReportResponse
@@ -70,14 +69,13 @@ func (s *reportService) GetTicketSalesReports(params dto.TicketReportQueryParams
 		})
 	}
 
-	pagination := utils.Paginate(total, params.Page, params.Limit)
-	return reports, pagination, nil
+	return reports, int(total), nil
 }
 
-func (s *reportService) GetPaymentReports(params dto.PaymentReportQueryParams) ([]dto.PaymentReportResponse, *dto.PaginationResponse, error) {
+func (s *reportService) GetPaymentReports(params dto.PaymentReportQueryParams) ([]dto.PaymentReportResponse, int, error) {
 	list, total, err := s.repo.GetPaymentReports(params)
 	if err != nil {
-		return nil, nil, customErr.NewInternalServerError("failed to retrieve payment reports", err)
+		return nil, 0, response.NewInternalServerError("failed to retrieve payment reports", err)
 	}
 
 	var results []dto.PaymentReportResponse
@@ -94,14 +92,13 @@ func (s *reportService) GetPaymentReports(params dto.PaymentReportQueryParams) (
 		})
 	}
 
-	pagination := utils.Paginate(total, params.Page, params.Limit)
-	return results, pagination, nil
+	return results, int(total), nil
 }
 
-func (s *reportService) GetRefundReports(params dto.RefundReportQueryParams) ([]dto.RefundReportResponse, *dto.PaginationResponse, error) {
+func (s *reportService) GetRefundReports(params dto.RefundReportQueryParams) ([]dto.RefundReportResponse, int, error) {
 	list, total, err := s.repo.GetRefundReports(params)
 	if err != nil {
-		return nil, nil, customErr.NewInternalServerError("failed to retrieve refund reports", err)
+		return nil, 0, response.NewInternalServerError("failed to retrieve refund reports", err)
 	}
 
 	var result []dto.RefundReportResponse
@@ -117,15 +114,14 @@ func (s *reportService) GetRefundReports(params dto.RefundReportQueryParams) ([]
 		})
 	}
 
-	pagination := utils.Paginate(total, params.Page, params.Limit)
-	return result, pagination, nil
+	return result, int(total), nil
 }
 
 // services/report_service.go
-func (s *reportService) GetWithdrawalReports(params dto.WithdrawalReportQueryParams) ([]dto.WithdrawalReportResponse, *dto.PaginationResponse, error) {
+func (s *reportService) GetWithdrawalReports(params dto.WithdrawalReportQueryParams) ([]dto.WithdrawalReportResponse, int, error) {
 	list, total, err := s.repo.GetWithdrawalReports(params)
 	if err != nil {
-		return nil, nil, customErr.NewInternalServerError("failed to retrieve withdrawal reports", err)
+		return nil, 0, response.NewInternalServerError("failed to retrieve withdrawal reports", err)
 	}
 
 	var result []dto.WithdrawalReportResponse
@@ -144,6 +140,5 @@ func (s *reportService) GetWithdrawalReports(params dto.WithdrawalReportQueryPar
 		})
 	}
 
-	pagination := utils.Paginate(total, params.Page, params.Limit)
-	return result, pagination, nil
+	return result, int(total), nil
 }

@@ -1,20 +1,24 @@
 package repositories
 
 import (
-	"server/dto"
-	"server/models"
+	"errors"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/models"
 
 	"gorm.io/gorm"
 )
 
 type EventRepository interface {
+	DeleteEventByID(id string) error
 	CreateEvent(data *models.Event) error
 	UpdateEvent(data *models.Event) error
-	DeleteEventByID(id string) error
-	GetEventByID(id string) (*models.Event, error)
 	WithTx(fn func(tx *gorm.DB) error) error
-	GetAllEvents(params dto.EventQueryParams) ([]models.Event, int64, error)
 	IsTitleTaken(title string) (bool, error)
+	GetEventByID(id string) (*models.Event, error)
+	GetAllEvents(params dto.EventQueryParams) ([]models.Event, int64, error)
+	GetEventByIDWithTx(tx *gorm.DB, eventID string) (*models.Event, error)
 }
 
 type eventRepository struct {
@@ -109,4 +113,16 @@ func (r *eventRepository) IsTitleTaken(title string) (bool, error) {
 	var count int64
 	err := r.db.Model(&models.Event{}).Where("title = ?", title).Count(&count).Error
 	return count > 0, err
+}
+
+func (r *eventRepository) GetEventByIDWithTx(tx *gorm.DB, eventID string) (*models.Event, error) {
+	var event models.Event
+	err := tx.Preload("Tickets").Where("id = ?", eventID).First(&event).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &event, nil
 }

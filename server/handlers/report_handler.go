@@ -1,11 +1,14 @@
 package handlers
 
 import (
-	"net/http"
-	"server/dto"
-	"server/services"
-	"server/utils"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
+
+	"github.com/fiqrioemry/go-api-toolkit/pagination"
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,146 +21,197 @@ func NewReportHandler(service services.ReportService) *ReportHandler {
 }
 
 func (h *ReportHandler) GetSummary(c *gin.Context) {
+	// fetch summary data
 	data, err := h.service.GetSummary()
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, data)
+
+	response.OK(c, "Summary retrieved successfully", data)
 }
 
 func (h *ReportHandler) GetOrderReports(c *gin.Context) {
+	// bind query params
 	var params dto.OrderReportQueryParams
 	if !utils.BindAndValidateForm(c, &params) {
 		return
 	}
-	lists, pagination, err := h.service.GetOrderReports(params)
 
-	if err != nil {
-		utils.HandleError(c, err)
+	// apply pagination defaults
+	if err := pagination.BindAndSetDefaults(c, &params); err != nil {
+		response.Error(c, response.BadRequest(err.Error()))
 		return
 	}
-	// TODO : still hard coded, need to be dynamic. create a utils to handle this all at once
+
+	// fetch order reports
+	lists, total, err := h.service.GetOrderReports(params)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	// export as CSV
 	if params.Export == "csv" {
 		utils.ExportCSV(c, "orders_reports.csv", lists)
 		return
 	}
 
+	// export as PDF
 	if params.Export == "pdf" {
 		utils.ExportPDF(c, "orders_reports.pdf", lists)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"orders": lists, "pagination": pagination})
+	// build pagination meta
+	paginate := pagination.Build(params.Page, params.Limit, total)
+	response.OKWithPagination(c, "Orders retrieved successfully", lists, paginate)
 }
 
 func (h *ReportHandler) GetTicketSalesReports(c *gin.Context) {
+	// bind query params
 	var params dto.TicketReportQueryParams
 	if !utils.BindAndValidateForm(c, &params) {
 		return
 	}
 
-	lists, pagination, err := h.service.GetTicketSalesReports(params)
-	if err != nil {
-		utils.HandleError(c, err)
+	// apply pagination defaults
+	if err := pagination.BindAndSetDefaults(c, &params); err != nil {
+		response.Error(c, response.BadRequest(err.Error()))
 		return
 	}
 
+	// fetch ticket reports
+	lists, total, err := h.service.GetTicketSalesReports(params)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	// export as CSV
 	if params.Export == "csv" {
 		utils.ExportCSV(c, "tickets_reports.csv", lists)
 		return
 	}
 
+	// export as PDF
 	if params.Export == "pdf" {
 		utils.ExportPDF(c, "tickets_reports.pdf", lists)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"tickets":    lists,
-		"pagination": pagination,
-	})
+	// build pagination meta
+	paginate := pagination.Build(params.Page, params.Limit, total)
+	response.OKWithPagination(c, "Ticket sales reports retrieved successfully", lists, paginate)
 }
 
 func (h *ReportHandler) GetPaymentReports(c *gin.Context) {
+	// bind query params
 	var params dto.PaymentReportQueryParams
 	if !utils.BindAndValidateForm(c, &params) {
 		return
 	}
 
-	lists, pagination, err := h.service.GetPaymentReports(params)
-	if err != nil {
-		utils.HandleError(c, err)
+	// apply pagination defaults
+	if err := pagination.BindAndSetDefaults(c, &params); err != nil {
+		response.Error(c, response.BadRequest(err.Error()))
 		return
 	}
+
+	// fetch payment reports
+	lists, total, err := h.service.GetPaymentReports(params)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	// export as CSV
 	if params.Export == "csv" {
 		utils.ExportCSV(c, "payments_reports.csv", lists)
 		return
 	}
 
+	// export as PDF
 	if params.Export == "pdf" {
 		utils.ExportPDF(c, "payments_reports.pdf", lists)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"payments":   lists,
-		"pagination": pagination,
-	})
+	// build pagination meta
+	paginate := pagination.Build(params.Page, params.Limit, total)
+	response.OKWithPagination(c, "Payment reports retrieved successfully", lists, paginate)
 }
 
 func (h *ReportHandler) GetRefundReports(c *gin.Context) {
+	// bind query params
 	var params dto.RefundReportQueryParams
 	if !utils.BindAndValidateForm(c, &params) {
 		return
 	}
 
-	lists, pagination, err := h.service.GetRefundReports(params)
-	if err != nil {
-		utils.HandleError(c, err)
+	// apply pagination defaults
+	if err := pagination.BindAndSetDefaults(c, &params); err != nil {
+		response.Error(c, response.BadRequest(err.Error()))
 		return
 	}
+
+	// fetch refund reports
+	lists, total, err := h.service.GetRefundReports(params)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	// export as CSV
 	if params.Export == "csv" {
 		utils.ExportCSV(c, "refund_reports.csv", lists)
 		return
 	}
 
+	// export as PDF
 	if params.Export == "pdf" {
 		utils.ExportPDF(c, "refund_reports.pdf", lists)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"refunds":    lists,
-		"pagination": pagination,
-	})
+	// build pagination meta
+	paginate := pagination.Build(params.Page, params.Limit, total)
+	response.OKWithPagination(c, "Refund reports retrieved successfully", lists, paginate)
 }
 
-// handlers/report_handler.go
 func (h *ReportHandler) GetWithdrawalReports(c *gin.Context) {
+	// bind query params
 	var params dto.WithdrawalReportQueryParams
 	if !utils.BindAndValidateForm(c, &params) {
 		return
 	}
 
-	lists, pagination, err := h.service.GetWithdrawalReports(params)
-	if err != nil {
-		utils.HandleError(c, err)
+	// apply pagination defaults
+	if err := pagination.BindAndSetDefaults(c, &params); err != nil {
+		response.Error(c, response.BadRequest(err.Error()))
 		return
 	}
 
+	// fetch withdrawal reports
+	lists, total, err := h.service.GetWithdrawalReports(params)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	// export as CSV
 	if params.Export == "csv" {
 		utils.ExportCSV(c, "withdrawal_reports.csv", lists)
 		return
 	}
 
+	// export as PDF
 	if params.Export == "pdf" {
 		utils.ExportPDF(c, "withdrawal_reports.pdf", lists)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"withdrawals": lists,
-		"pagination":  pagination,
-	})
+	// build pagination meta
+	paginate := pagination.Build(params.Page, params.Limit, total)
+	response.OKWithPagination(c, "withdrawal reports retrieved successfully", lists, paginate)
 }

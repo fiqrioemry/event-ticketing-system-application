@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"net/http"
-	"server/dto"
-	"server/errors"
-	customErr "server/errors"
-	"server/services"
-	"server/utils"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
 
 	"github.com/fiqrioemry/go-api-toolkit/pagination"
 	"github.com/fiqrioemry/go-api-toolkit/response"
@@ -25,184 +25,185 @@ func NewEventHandler(service services.EventService) *EventHandler {
 
 func (h *EventHandler) GetAllEvents(c *gin.Context) {
 	var params dto.EventQueryParams
+	// bind query params
 	if !utils.BindAndValidateForm(c, &params) {
 		return
 	}
 
+	// apply pagination defaults
 	if err := pagination.BindAndSetDefaults(c, &params); err != nil {
 		response.Error(c, response.BadRequest(err.Error()))
 		return
 	}
 
+	// fetch events data
 	data, total, err := h.service.GetAllEvents(params)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
+	// build pagination meta
 	pag := pagination.Build(params.Page, params.Limit, total)
 
 	response.OKWithPagination(c, "events retrieved successfully", data, pag)
 }
 
 func (h *EventHandler) GetEventByID(c *gin.Context) {
+	// extract event ID
 	id := c.Param("id")
+	// fetch event data
 	data, err := h.service.GetEventByID(id)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, data)
+	response.OK(c, "Event retrieved successfully", data)
 }
 
-func buildValidationError(err error) *errors.AppError {
-	validationErr := errors.NewBadRequest("Validation failed")
+func buildValidationError(err error) *response.AppError {
+	validationErr := response.NewBadRequest("Validation failed")
 	validationErr.WithContext("details", err.Error())
 	return validationErr
 }
 
 func (h *EventHandler) CreateEvent(c *gin.Context) {
-	// 1. Parse image from form
+	// extract form image
 	image, err := c.FormFile("image")
 	if err != nil {
-		utils.HandleError(c, customErr.NewBadRequest("Image is required"))
+		response.Error(c, response.BadRequest("Event image is required"))
 		return
 	}
 
-	// 2. Parse JSON data from form
+	// extract form data
 	dataStr := c.PostForm("data")
 	if dataStr == "" {
-		utils.HandleError(c, customErr.NewBadRequest("Event data is required"))
+		response.Error(c, response.BadRequest("Event data is required"))
 		return
 	}
 
-	// 3. Unmarshal JSON data
+	// parse JSON data
 	var req dto.CreateEventRequest
 	if err := json.Unmarshal([]byte(dataStr), &req); err != nil {
-		utils.HandleError(c, customErr.NewBadRequest("Invalid JSON data format: "+err.Error()))
+		response.Error(c, response.BadRequest("Invalid JSON data format: "+err.Error()))
 		return
 	}
 
-	// 4. Attach image to request (after JSON parsing)
 	req.Image = image
 
-	// 5. Manual validation using validator
+	// validate request struct
 	validate := validator.New()
 	if err := validate.Struct(req); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			validationErr := buildValidationError(validationErrors)
-			utils.HandleError(c, validationErr)
+			response.Error(c, validationErr)
 			return
 		}
-		utils.HandleError(c, customErr.NewBadRequest("Validation failed: "+err.Error()))
+		response.Error(c, response.NewBadRequest("Validation failed: "+err.Error()))
 		return
 	}
 
-	// 6. Upload image
+	// upload image file
 	imageURL, err := utils.UploadImageWithValidation(req.Image)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 	req.ImageURL = imageURL
 
-	// 7. Create event + tickets
-	event, err := h.service.CreateEvent(&req)
+	// create event record
+	createdEvent, err := h.service.CreateEvent(&req)
 	if err != nil {
+		// cleanup failed upload
 		utils.CleanupImageOnError(imageURL)
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"success": true,
-		"message": "Event and tickets created successfully",
-		"data": gin.H{
-			"event_id":      event.ID,
-			"title":         event.Title,
-			"status":        event.Status,
-			"tickets_count": len(req.Tickets),
-		},
-	})
+	response.Created(c, "Event and tickets created successfully", createdEvent)
 }
+
 func (h *EventHandler) UpdateEventByID(c *gin.Context) {
+	// extract event ID
 	id := c.Param("id")
 
-	// 1. Parse JSON data from form (required)
+	// extract form data
 	dataStr := c.PostForm("data")
 	if dataStr == "" {
-		utils.HandleError(c, customErr.NewBadRequest("Event data is required"))
+		response.Error(c, response.NewBadRequest("Event data is required"))
 		return
 	}
 
-	// 2. Unmarshal JSON data
+	// parse JSON data
 	var req dto.UpdateEventRequest
 	if err := json.Unmarshal([]byte(dataStr), &req); err != nil {
-		utils.HandleError(c, customErr.NewBadRequest("Invalid JSON data format: "+err.Error()))
+		response.Error(c, response.NewBadRequest("Invalid JSON data format: "+err.Error()))
 		return
 	}
 
-	// 3. Parse image from form (optional)
+	// check optional image
 	image, err := c.FormFile("image")
 	if err == nil && image != nil && image.Filename != "" {
-		// Image provided, attach to request
 		req.Image = image
 	}
-	// If err != nil, it means no image provided (which is OK for update)
 
-	// 4. Manual validation using validator
+	// validate request struct
 	validate := validator.New()
 	if err := validate.Struct(req); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			validationErr := buildValidationError(validationErrors)
-			utils.HandleError(c, validationErr)
+			response.Error(c, validationErr)
 			return
 		}
-		utils.HandleError(c, customErr.NewBadRequest("Validation failed: "+err.Error()))
+		response.Error(c, response.NewBadRequest("Validation failed: "+err.Error()))
 		return
 	}
 
-	// 5. Handle image upload (if provided)
+	// upload new image
 	if req.Image != nil && req.Image.Filename != "" {
 		imageURL, err := utils.UploadImageWithValidation(req.Image)
 		if err != nil {
-			utils.HandleError(c, err)
+			response.Error(c, err)
 			return
 		}
 		req.ImageURL = imageURL
 	}
 
-	// 6. Update event
-	if err := h.service.UpdateEvent(id, &req); err != nil {
+	// update event record
+	updatedEvent, err := h.service.UpdateEvent(id, &req)
+	if err != nil {
+		// cleanup failed upload
 		if req.ImageURL != "" {
 			utils.CleanupImageOnError(req.ImageURL)
 		}
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Event updated successfully",
-	})
+	response.OK(c, "Event updated successfully", updatedEvent)
 }
 
 func (h *EventHandler) GetTicketsByEventID(c *gin.Context) {
+	// extract event ID
 	eventID := c.Param("id")
 
+	// fetch tickets data
 	tickets, err := h.service.GetAllTicketsByEventID(eventID)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, tickets)
+	response.OK(c, "Tickets retrieved successfully", tickets)
 }
 
 func (h *EventHandler) DeleteEventByID(c *gin.Context) {
-	id := c.Param("id")
-	if err := h.service.DeleteEventByID(id); err != nil {
-		utils.HandleError(c, err)
+	// extract event ID
+	eventID := c.Param("id")
+	// delete event record
+	if err := h.service.DeleteEventByID(eventID); err != nil {
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Event deleted"})
+
+	response.OK(c, "Event deleted successfully", eventID)
 }

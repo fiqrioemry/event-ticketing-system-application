@@ -1,17 +1,18 @@
 package services
 
 import (
-	"server/dto"
-	customErr "server/errors"
-	"server/repositories"
-	"server/utils"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/models"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
+
+	"github.com/fiqrioemry/go-api-toolkit/response"
 )
 
 type UserService interface {
 	GetUserProfile(userID string) (*dto.ProfileResponse, error)
 	GetUserDetail(id string) (*dto.UserDetailResponse, error)
-	UpdateUserDetail(userID string, request *dto.UpdateProfileRequest) error
-	GetAllUsers(params dto.UserQueryParams) ([]dto.UserListResponse, *dto.PaginationResponse, error)
+	GetAllUsers(params dto.UserQueryParams) ([]dto.UserListResponse, int, error)
+	UpdateUserDetail(userID string, req *dto.UpdateProfileRequest) (*models.User, error)
 }
 
 type userService struct {
@@ -25,10 +26,10 @@ func NewUserService(user repositories.UserRepository) UserService {
 func (s *userService) GetUserProfile(userID string) (*dto.ProfileResponse, error) {
 	user, err := s.user.GetUserByID(userID)
 	if err != nil || user == nil {
-		return nil, customErr.NewNotFound("user not found").WithContext("userID", userID)
+		return nil, response.NewNotFound("user not found")
 	}
 
-	return &dto.ProfileResponse{
+	profile := &dto.ProfileResponse{
 		ID:       user.ID.String(),
 		Email:    user.Email,
 		Fullname: user.Fullname,
@@ -36,29 +37,30 @@ func (s *userService) GetUserProfile(userID string) (*dto.ProfileResponse, error
 		Balance:  user.Balance,
 		JoinedAt: user.CreatedAt,
 		Role:     user.Role,
-	}, nil
+	}
+	return profile, nil
 }
 
-func (s *userService) UpdateUserDetail(userID string, req *dto.UpdateProfileRequest) error {
+func (s *userService) UpdateUserDetail(userID string, req *dto.UpdateProfileRequest) (*models.User, error) {
 	user, err := s.user.GetUserByID(userID)
 	if err != nil || user == nil {
-		return customErr.NewNotFound("user not found").WithContext("userID", userID)
+		return nil, response.NewNotFound("user not found")
 	}
 
 	user.Fullname = req.Fullname
 	user.AvatarURL = req.AvatarURL
 
 	if err := s.user.UpdateUser(user); err != nil {
-		return customErr.NewInternalServerError("failed to update user profile", err)
+		return nil, response.NewInternalServerError("failed to update user profile", err)
 	}
 
-	return nil
+	return user, nil
 }
 
-func (s *userService) GetAllUsers(params dto.UserQueryParams) ([]dto.UserListResponse, *dto.PaginationResponse, error) {
+func (s *userService) GetAllUsers(params dto.UserQueryParams) ([]dto.UserListResponse, int, error) {
 	users, total, err := s.user.GetAllUsers(params)
 	if err != nil {
-		return nil, nil, customErr.NewInternalServerError("failed to fetch user list", err)
+		return nil, 0, response.NewInternalServerError("failed to fetch user list", err)
 	}
 
 	var results []dto.UserListResponse
@@ -73,14 +75,13 @@ func (s *userService) GetAllUsers(params dto.UserQueryParams) ([]dto.UserListRes
 		})
 	}
 
-	pagination := utils.Paginate(total, params.Page, params.Limit)
-	return results, pagination, nil
+	return results, int(total), nil
 }
 
 func (s *userService) GetUserDetail(id string) (*dto.UserDetailResponse, error) {
 	user, err := s.user.GetUserByID(id)
 	if err != nil || user == nil {
-		return nil, customErr.NewNotFound("user not found").WithContext("userID", id)
+		return nil, response.NewNotFound("user not found").WithContext("userID", id)
 	}
 
 	res := &dto.UserDetailResponse{

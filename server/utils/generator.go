@@ -6,10 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"server/dto"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
 
 	"github.com/google/uuid"
 	"github.com/jung-kurt/gofpdf"

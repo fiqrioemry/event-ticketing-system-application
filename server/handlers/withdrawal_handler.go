@@ -1,11 +1,10 @@
 package handlers
 
 import (
-	"net/http"
-	"server/dto"
-	"server/services"
-	"server/utils"
-
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,19 +24,21 @@ func (h *WithdrawalHandler) CreateWithdrawal(c *gin.Context) {
 	}
 	res, err := h.service.CreateWithdrawal(userID, req)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, res)
+
+	response.Created(c, "Withdrawal request created successfully", res)
 }
 
 func (h *WithdrawalHandler) GetAllWithdrawals(c *gin.Context) {
 	res, err := h.service.GetAllWithdrawals()
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, res)
+
+	response.OK(c, "Withdrawals retrieved successfully", res)
 }
 
 func (h *WithdrawalHandler) ReviewWithdrawal(c *gin.Context) {
@@ -52,8 +53,8 @@ func (h *WithdrawalHandler) ReviewWithdrawal(c *gin.Context) {
 	}
 	res, err := h.service.ReviewWithdrawal(id, adminID, body.Status)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, res)
+	response.OK(c, "Withdrawal reviewed successfully", res)
 }

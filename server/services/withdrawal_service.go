@@ -1,12 +1,13 @@
 package services
 
 import (
-	"server/dto"
-	customErr "server/errors"
-	"server/models"
-	"server/repositories"
 	"time"
 
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/models"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
+
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/google/uuid"
 )
 
@@ -27,11 +28,11 @@ func NewWithdrawalService(repo repositories.WithdrawalRepository) WithdrawalServ
 func (s *withdrawalService) CreateWithdrawal(userID string, req dto.CreateWithdrawalRequest) (*dto.WithdrawalResponse, error) {
 	user, err := s.repo.GetUserByID(userID)
 	if err != nil || user == nil {
-		return nil, customErr.NewNotFound("user not found").WithContext("userID", userID)
+		return nil, response.NewNotFound("user not found")
 	}
 
 	if user.Balance < req.Amount {
-		return nil, customErr.NewBadRequest("insufficient balance")
+		return nil, response.NewBadRequest("insufficient balance")
 	}
 
 	withdrawal := &models.WithdrawalRequest{
@@ -51,7 +52,7 @@ func (s *withdrawalService) CreateWithdrawal(userID string, req dto.CreateWithdr
 func (s *withdrawalService) GetAllWithdrawals() ([]dto.WithdrawalResponse, error) {
 	list, err := s.repo.GetAllWithdrawals()
 	if err != nil {
-		return nil, customErr.NewInternalServerError("failed to retrieve withdrawals", err)
+		return nil, response.NewInternalServerError("failed to retrieve withdrawals", err)
 	}
 
 	var res []dto.WithdrawalResponse
@@ -64,11 +65,11 @@ func (s *withdrawalService) GetAllWithdrawals() ([]dto.WithdrawalResponse, error
 func (s *withdrawalService) ReviewWithdrawal(id, adminID, status string) (*dto.WithdrawalResponse, error) {
 	w, err := s.repo.GetWithdrawalByID(id)
 	if err != nil || w == nil {
-		return nil, customErr.NewNotFound("withdrawal request not found").WithContext("withdrawalID", id)
+		return nil, response.NewNotFound("withdrawal request not found").WithContext("withdrawalID", id)
 	}
 
 	if w.Status != "pending" {
-		return nil, customErr.NewBadRequest("withdrawal already reviewed")
+		return nil, response.NewBadRequest("withdrawal already reviewed")
 	}
 
 	w.Status = status

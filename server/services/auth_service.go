@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"server/config"
-	"server/dto"
-	"server/models"
-	"server/repositories"
-	"server/utils"
 	"time"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/config"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/models"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
 	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
@@ -44,7 +45,7 @@ func (s *authService) ResendOTP(email string) error {
 		return response.NewInternalServerError("Failed to retrieve OTP data", err)
 	}
 
-	var otpData map[string]interface{}
+	var otpData map[string]any
 	if err := json.Unmarshal([]byte(otpDataStr), &otpData); err != nil {
 		return response.NewInternalServerError("Invalid OTP data", err)
 	}

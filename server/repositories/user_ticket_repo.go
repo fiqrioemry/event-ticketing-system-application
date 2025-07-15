@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"server/models"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/models"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

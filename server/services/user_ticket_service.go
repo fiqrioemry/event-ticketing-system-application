@@ -1,9 +1,9 @@
 package services
 
 import (
-	"server/dto"
-	customErr "server/errors"
-	"server/repositories"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
+	"github.com/fiqrioemry/go-api-toolkit/response"
 )
 
 type UserTicketService interface {
@@ -23,7 +23,7 @@ func NewUserTicketService(repo repositories.UserTicketRepository) UserTicketServ
 func (s *userTicketService) GetUserTicketByID(id string) (*dto.UserTicketResponse, error) {
 	ticket, err := s.repo.GetUserTicketByID(id)
 	if err != nil || ticket == nil {
-		return nil, customErr.NewNotFound("ticket not found").WithContext("ticketID", id)
+		return nil, response.NewNotFound("ticket not found")
 	}
 
 	resp := &dto.UserTicketResponse{
@@ -43,10 +43,10 @@ func (s *userTicketService) GetUserTicketByID(id string) (*dto.UserTicketRespons
 func (s *userTicketService) ValidateTicket(qr string) (*dto.UserTicketResponse, error) {
 	ticket, err := s.repo.ValidateQRCode(qr)
 	if err != nil {
-		return nil, customErr.NewBadRequest("invalid QR code")
+		return nil, response.NewBadRequest("invalid QR code")
 	}
 	if ticket.IsUsed {
-		return nil, customErr.NewBadRequest("ticket already used")
+		return nil, response.NewBadRequest("ticket already used")
 	}
 
 	resp := &dto.UserTicketResponse{

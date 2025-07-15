@@ -1,7 +1,7 @@
 package services
 
 import (
-	"server/repositories"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
 )
 
 type Services struct {

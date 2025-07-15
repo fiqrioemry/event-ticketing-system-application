@@ -2,19 +2,20 @@ package main
 
 import (
 	"log"
-	"os"
-	"server/config"
-	"server/cron"
-	"server/handlers"
-	"server/middleware"
-	"server/repositories"
-	"server/routes"
-	"server/seeders"
-	"server/services"
-	"server/utils"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/config"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/cron"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/handlers"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/middleware"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/routes"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/seeders"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
 	"time"
 
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 )
@@ -31,6 +32,12 @@ func main() {
 	utils.InitLogger()
 	db := config.DB
 
+	response.InitGin(response.InitConfig{
+		Logger:              utils.GetLogger(),
+		LogSuccessResponses: false,
+		LogErrorResponses:   true,
+	})
+
 	seeders.ResetDatabase(db)
 
 	// ========== initialisasi layer ============
@@ -45,19 +52,7 @@ func main() {
 	// ========== Inisialisasi gin engine =======
 	r := gin.Default()
 
-	r.GET("/health", func(c *gin.Context) {
-		var startTime = time.Now()
-		c.JSON(200, gin.H{
-			"status":    "healthy",
-			"timestamp": time.Now().Format(time.RFC3339),
-			"uptime":    time.Since(startTime).Seconds(),
-		})
-	})
-
-	err := r.SetTrustedProxies(config.GetTrustedProxies())
-	if err != nil {
-		log.Fatalf("Failed to set trusted proxies: %v", err)
-	}
+	r.SetTrustedProxies(config.AppConfig.TrustedProxies)
 
 	// ========== inisialisasi Middleware ========
 	r.Use(
@@ -65,14 +60,14 @@ func main() {
 		middleware.Recovery(),
 		middleware.CORS(),
 		middleware.RateLimiter(100, 60*time.Second),
-		middleware.LimitFileSize(12<<20),
-		middleware.APIKeyGateway([]string{"/api/v1/payments/stripe/webhooks"}),
+		middleware.LimitFileSize(config.AppConfig.MaxFileSize),
+		middleware.APIKeyGateway(config.AppConfig.SkippedApiEndpoints),
 	)
 
 	// ========== inisialisasi routes ===========
 	routes.InitRoutes(r, h)
 
-	port := os.Getenv("PORT")
+	port := config.AppConfig.ServerPort
 	log.Println("server running on port:", port)
 	log.Fatal(r.Run(":" + port))
 }

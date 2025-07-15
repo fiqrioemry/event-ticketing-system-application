@@ -11,7 +11,7 @@ import (
 	"github.com/jung-kurt/gofpdf"
 )
 
-func ExportCSV(c *gin.Context, filename string, records interface{}) {
+func ExportCSV(c *gin.Context, filename string, records any) {
 	v := reflect.ValueOf(records)
 	if v.Kind() != reflect.Slice {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid data format for CSV export"})

@@ -3,11 +3,12 @@ package middleware
 import (
 	"fmt"
 	"net/http"
-	"server/config"
-	"server/errors"
 	"strings"
 	"time"
 
+	"github.com/fiqrioemry/event_ticketing_system_app/server/config"
+
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,8 +26,9 @@ func RateLimiter(maxAttempts int, duration time.Duration) gin.HandlerFunc {
 
 		count, _ := config.RedisClient.Get(config.Ctx, key).Int()
 		if count >= maxAttempts {
-			errors.NewTooManyRequests("Too many requests. Slow down baby.").
+			parsedErr := response.NewTooManyRequests("Too many requests. Slow down baby.").
 				WithContext("ip_address", ip)
+			response.Error(c, parsedErr)
 			c.Abort()
 			return
 		}

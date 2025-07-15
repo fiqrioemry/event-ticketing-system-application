@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"net/http"
-	"os"
-	"server/services"
-	"server/utils"
 
+	"github.com/fiqrioemry/event_ticketing_system_app/server/config"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
+
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 	"github.com/stripe/stripe-go/v75/webhook"
 )
@@ -25,26 +27,26 @@ func (h *PaymentHandler) HandlePaymentNotifications(c *gin.Context) {
 
 	body, err := c.GetRawData()
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
 	sigHeader := c.GetHeader("Stripe-Signature")
 
-	event, err := webhook.ConstructEventWithOptions(body, sigHeader, os.Getenv("STRIPE_WEBHOOK_SECRET"), webhook.ConstructEventOptions{
+	event, err := webhook.ConstructEventWithOptions(body, sigHeader, config.AppConfig.StripeWebhookSecret, webhook.ConstructEventOptions{
 		IgnoreAPIVersionMismatch: true,
 	})
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
 	if err := h.service.StripeWebhookNotification(event); err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Payment received successfully"})
+	response.OK(c, "Payment notification processed successfully", nil)
 }
 
 // TODO : // 1. Add a method to create a payment, so admin can do it manually based on requests

@@ -2,7 +2,7 @@
 package routes
 
 import (
-	"server/handlers"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/handlers"
 
 	"github.com/gin-gonic/gin"
 )

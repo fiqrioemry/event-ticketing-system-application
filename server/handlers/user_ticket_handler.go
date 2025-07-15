@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"net/http"
-	"server/dto"
-	"server/services"
-	"server/utils"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
+
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,19 +23,20 @@ func (h *UserTicketHandler) GetTicketByID(c *gin.Context) {
 	id := c.Param("id")
 	ticket, err := h.service.GetUserTicketByID(id)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, ticket)
+	response.OK(c, "Ticket retrieved successfully", ticket)
 }
 
 func (h *UserTicketHandler) UseTicket(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.service.MarkTicketUsed(id); err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "ticket used successfully"})
+
+	response.OK(c, "Ticket marked as used successfully", id)
 }
 
 func (h *UserTicketHandler) ValidateTicket(c *gin.Context) {
@@ -41,23 +44,25 @@ func (h *UserTicketHandler) ValidateTicket(c *gin.Context) {
 	if !utils.BindAndValidateJSON(c, &req) {
 		return
 	}
+
 	ticket, err := h.service.ValidateTicket(req.QRCode)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, ticket)
+
+	response.OK(c, "Ticket validated successfully", ticket)
 }
 
 func (h *UserTicketHandler) PrintTicket(c *gin.Context) {
 	id := c.Param("id")
 	ticket, err := h.service.GetUserTicketByID(id)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
 	ticketDocument := utils.GenerateTicketPDF(ticket)
 
-	c.JSON(http.StatusOK, ticketDocument)
+	response.OK(c, "Ticket document generated successfully", ticketDocument)
 }

@@ -2,8 +2,9 @@
 package routes
 
 import (
-	"server/handlers"
-	"server/middleware"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/middleware"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/handlers"
 
 	"github.com/gin-gonic/gin"
 )

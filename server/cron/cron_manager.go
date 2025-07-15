@@ -3,7 +3,7 @@ package cron
 import (
 	"log"
 
-	"server/services"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
 
 	"github.com/robfig/cron/v3"
 )

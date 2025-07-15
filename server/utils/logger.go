@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"os"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/config"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -10,7 +10,8 @@ import (
 var logger *zap.Logger
 
 func InitLogger() {
-	env := os.Getenv("NODE_ENV")
+
+	env := config.AppConfig.AppEnv
 	var err error
 
 	if env == "development" {

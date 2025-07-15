@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"server/services"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
 )
 
 type Handlers struct {

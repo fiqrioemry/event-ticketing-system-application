@@ -1,14 +1,14 @@
 package services
 
 import (
-	"os"
-	"server/dto"
-	customErr "server/errors"
-	"server/models"
-	"server/repositories"
-	"server/utils"
 	"time"
 
+	"github.com/fiqrioemry/event_ticketing_system_app/server/config"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/models"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
+
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v75"
 	"github.com/stripe/stripe-go/v75/checkout/session"
@@ -20,7 +20,7 @@ type OrderService interface {
 	GetUserTicketsByOrder(orderID string, userID string) ([]dto.UserTicketResponse, error)
 	RefundOrder(orderID string, userID string, reason string) (*dto.RefundOrderResponse, error)
 	CreateNewOrder(req dto.CreateOrderRequest, userID string) (*dto.CheckoutSessionResponse, error)
-	GetMyOrders(userID string, params dto.OrderQueryParams) ([]dto.OrderResponse, *dto.PaginationResponse, error)
+	GetMyOrders(userID string, params dto.OrderQueryParams) ([]dto.OrderResponse, int, error)
 }
 
 type orderService struct {
@@ -41,16 +41,16 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 	_, err := s.repo.WithTx(func(tx *gorm.DB) (string, error) {
 		user, err := s.user.GetUserByID(userID)
 		if user == nil || err != nil {
-			return "", customErr.NewNotFound("user not found")
+			return "", response.NewNotFound("user not found")
 		}
 
 		event, err := s.event.GetEventByID(req.EventID)
 		if event == nil || err != nil {
-			return "", customErr.NewNotFound("event not found")
+			return "", response.NewNotFound("event not found")
 		}
 
 		if event.Status != "active" && event.Status != "ongoing" {
-			return "", customErr.NewBadRequest("event is not available for ordering")
+			return "", response.NewBadRequest("event is not available for ordering")
 		}
 
 		orderID := uuid.New()
@@ -71,19 +71,19 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 		for _, item := range req.OrderDetails {
 			ticket, err := s.ticket.GetTicketByID(item.TicketID)
 			if ticket == nil || err != nil {
-				return "", customErr.NewNotFound("ticket not found: " + item.TicketID)
+				return "", response.NewNotFound("ticket not found: " + item.TicketID)
 			}
 
 			if ticket.Quota < item.Quantity {
-				return "", customErr.NewBadRequest("not enough quota for ticket: " + ticket.Name)
+				return "", response.NewBadRequest("not enough quota for ticket: " + ticket.Name)
 			}
 			if ticket.Limit < item.Quantity {
-				return "", customErr.NewBadRequest("ticket limit exceeded for: " + ticket.Name)
+				return "", response.NewBadRequest("ticket limit exceeded for: " + ticket.Name)
 			}
 
 			ticket.Quota -= item.Quantity
 			if err := tx.Save(ticket).Error; err != nil {
-				return "", customErr.NewInternalServerError("failed to update ticket quota", err)
+				return "", response.NewInternalServerError("failed to update ticket quota", err)
 			}
 
 			subtotal := ticket.Price * float64(item.Quantity)
@@ -98,7 +98,7 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 				Price:      ticket.Price,
 			}
 			if err := tx.Create(orderDetail).Error; err != nil {
-				return "", customErr.NewInternalServerError("failed to create order detail", err)
+				return "", response.NewInternalServerError("failed to create order detail", err)
 			}
 
 			stripeItems = append(stripeItems, &stripe.CheckoutSessionLineItemParams{
@@ -115,7 +115,7 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 
 		order.TotalPrice = totalPrice
 		if err := tx.Create(order).Error; err != nil {
-			return "", customErr.NewInternalServerError("failed to create order", err)
+			return "", response.NewInternalServerError("failed to create order", err)
 		}
 
 		paymentID := uuid.New()
@@ -130,15 +130,15 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 			Amount:   totalPrice,
 		}
 		if err := tx.Create(payment).Error; err != nil {
-			return "", customErr.NewInternalServerError("failed to create payment", err)
+			return "", response.NewInternalServerError("failed to create payment", err)
 		}
 
 		params := &stripe.CheckoutSessionParams{
 			PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
 			LineItems:          stripeItems,
 			Mode:               stripe.String(string(stripe.CheckoutSessionModePayment)),
-			SuccessURL:         stripe.String(os.Getenv("STRIPE_SUCCESS_URL_DEV")),
-			CancelURL:          stripe.String(os.Getenv("STRIPE_CANCEL_URL_DEV")),
+			SuccessURL:         stripe.String(config.AppConfig.StripeSuccessUrlDev),
+			CancelURL:          stripe.String(config.AppConfig.StripeCancelUrlDev),
 			ClientReferenceID:  stripe.String(order.ID.String()),
 			Metadata: map[string]string{
 				"user_id":    user.ID.String(),
@@ -148,7 +148,7 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 		}
 		sess, err := session.New(params)
 		if err != nil {
-			return "", customErr.NewInternalServerError("failed to create stripe session", err)
+			return "", response.NewInternalServerError("failed to create stripe session", err)
 		}
 
 		result = &dto.CheckoutSessionResponse{
@@ -166,10 +166,10 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 	return result, nil
 }
 
-func (s *orderService) GetMyOrders(userID string, params dto.OrderQueryParams) ([]dto.OrderResponse, *dto.PaginationResponse, error) {
+func (s *orderService) GetMyOrders(userID string, params dto.OrderQueryParams) ([]dto.OrderResponse, int, error) {
 	orders, total, err := s.repo.GetMyOrders(userID, params)
 	if err != nil {
-		return nil, nil, customErr.NewInternalServerError("failed to retrieve orders", err)
+		return nil, 0, response.NewInternalServerError("failed to retrieve orders", err)
 	}
 
 	var results []dto.OrderResponse
@@ -188,14 +188,13 @@ func (s *orderService) GetMyOrders(userID string, params dto.OrderQueryParams) (
 		})
 	}
 
-	pagination := utils.Paginate(total, params.Page, params.Limit)
-	return results, pagination, nil
+	return results, int(total), nil
 }
 
 func (s *orderService) GetOrderDetail(orderID string) ([]dto.OrderDetailResponse, error) {
 	orderDetails, err := s.repo.GetOrderDetails(orderID)
 	if err != nil || len(orderDetails) == 0 {
-		return nil, customErr.NewNotFound("order details not found").WithContext("orderID", orderID)
+		return nil, response.NewNotFound("order details not found").WithContext("orderID", orderID)
 	}
 
 	var responses []dto.OrderDetailResponse
@@ -217,12 +216,12 @@ func (s *orderService) GetUserTicketsByOrder(orderID, userID string) ([]dto.User
 
 	order, err := s.repo.GetOrderByID(orderID)
 	if order == nil || err != nil {
-		return nil, customErr.NewNotFound("order not found").WithContext("orderID", orderID)
+		return nil, response.NewNotFound("order not found").WithContext("orderID", orderID)
 	}
 
 	userTickets, err := s.userTicket.GetUserTickets(order.EventID.String(), userID)
 	if err != nil || len(userTickets) == 0 {
-		return nil, customErr.NewNotFound("user tickets not found").WithContext("orderID", orderID)
+		return nil, response.NewNotFound("user tickets not found").WithContext("orderID", orderID)
 	}
 
 	var result []dto.UserTicketResponse
@@ -244,22 +243,22 @@ func (s *orderService) GetUserTicketsByOrder(orderID, userID string) ([]dto.User
 func (s *orderService) RefundOrder(orderID string, userID string, reason string) (*dto.RefundOrderResponse, error) {
 	order, err := s.repo.GetOrderByID(orderID)
 	if err != nil || order == nil {
-		return nil, customErr.NewNotFound("order not found").WithContext("orderID", orderID)
+		return nil, response.NewNotFound("order not found").WithContext("orderID", orderID)
 	}
 
 	if order.UserID.String() != userID {
-		return nil, customErr.NewForbidden("not your order")
+		return nil, response.NewForbidden("not your order")
 	}
 
 	if order.Status != "paid" || order.IsRefunded {
-		return nil, customErr.NewBadRequest("order not refundable")
+		return nil, response.NewBadRequest("order not refundable")
 	}
 
 	eventDate := order.Event.Date
 	dayNow := time.Now().In(time.Local)
 	dayEvent := eventDate
-	if dayNow == dayEvent {
-		return nil, customErr.NewBadRequest("cannot refund on event day")
+	if dayNow.Equal(dayEvent) {
+		return nil, response.NewBadRequest("cannot refund on event day")
 	}
 
 	details, _ := s.repo.GetOrderDetails(orderID)
@@ -268,11 +267,11 @@ func (s *orderService) RefundOrder(orderID string, userID string, reason string)
 	for _, d := range details {
 		ticket, err := s.ticket.GetTicketByID(d.TicketID.String())
 		if ticket == nil || err != nil {
-			return nil, customErr.NewNotFound("ticket not found: "+d.TicketID.String()).WithContext("orderID", orderID)
+			return nil, response.NewNotFound("ticket not found: "+d.TicketID.String()).WithContext("orderID", orderID)
 		}
 
 		if !ticket.Refundable {
-			return nil, customErr.NewBadRequest("ticket not refundable: " + ticket.Name)
+			return nil, response.NewBadRequest("ticket not refundable: " + ticket.Name)
 		}
 
 		percent := float64(ticket.RefundPercent) / 100.0
@@ -282,10 +281,10 @@ func (s *orderService) RefundOrder(orderID string, userID string, reason string)
 
 	used, err := s.repo.HasUsedTicket(orderID)
 	if err != nil {
-		return nil, customErr.NewInternalServerError("failed to check user tickets", err)
+		return nil, response.NewInternalServerError("failed to check user tickets", err)
 	}
 	if used {
-		return nil, customErr.NewBadRequest("you have already used one of the tickets")
+		return nil, response.NewBadRequest("you have already used one of the tickets")
 	}
 
 	// mark order

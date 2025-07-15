@@ -1,12 +1,14 @@
 package handlers
 
 import (
-	"server/dto"
-	"server/services"
-	"server/utils"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
-	"net/http"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
 
+	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
+
+	"github.com/fiqrioemry/go-api-toolkit/pagination"
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,83 +21,101 @@ func NewOrderHandler(service services.OrderService) *OrderHandler {
 }
 
 func (h *OrderHandler) CreateNewOrder(c *gin.Context) {
+	// extract user ID
 	userID := utils.MustGetUserID(c)
 
+	// bind request data
 	var req dto.CreateOrderRequest
 	if !utils.BindAndValidateJSON(c, &req) {
 		return
 	}
 
+	// create order record
 	orderID, err := h.service.CreateNewOrder(req, userID)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"orderID": orderID})
+	response.Created(c, "Order created successfully", orderID)
 }
 
 func (h *OrderHandler) GetMyOrders(c *gin.Context) {
-
+	// extract user ID
 	userID := utils.MustGetUserID(c)
 
+	// bind query params
 	var params dto.OrderQueryParams
 	if !utils.BindAndValidateForm(c, &params) {
 		return
 	}
 
-	orders, pagination, err := h.service.GetMyOrders(userID, params)
-	if err != nil {
-		utils.HandleError(c, err)
+	// apply pagination defaults
+	if err := pagination.BindAndSetDefaults(c, &params); err != nil {
+		response.Error(c, response.BadRequest(err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"orders":     orders,
-		"pagination": pagination,
-	})
+	// fetch user orders
+	orders, total, err := h.service.GetMyOrders(userID, params)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	// build pagination meta
+	pag := pagination.Build(params.Page, params.Limit, total)
+
+	response.OKWithPagination(c, "orders retrieved successfully", orders, pag)
 }
 
 func (h *OrderHandler) GetOrderDetail(c *gin.Context) {
+	// extract order ID
 	orderID := c.Param("id")
 
+	// fetch order details
 	order, err := h.service.GetOrderDetail(orderID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.Error(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, order)
+
+	response.OK(c, "Order details retrieved successfully", order)
 }
 
 func (h *OrderHandler) GetUserTickets(c *gin.Context) {
-	userID := utils.MustGetUserID(c)
+	// extract ids
 	orderID := c.Param("id")
+	userID := utils.MustGetUserID(c)
 
+	// fetch user tickets
 	tickets, err := h.service.GetUserTicketsByOrder(orderID, userID)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"tickets": tickets,
-	})
+	response.OK(c, "User tickets retrieved successfully", tickets)
 }
 
 func (h *OrderHandler) RefundOrder(c *gin.Context) {
+	// extract user ID
 	userID := utils.MustGetUserID(c)
+	// extract order ID
 	orderID := c.Param("id")
 
+	// bind refund request
 	var req dto.RefundOrderRequest
 	if !utils.BindAndValidateJSON(c, &req) {
 		return
 	}
 
-	res, err := h.service.RefundOrder(orderID, userID, req.Reason)
+	// process order refund
+	refundResult, err := h.service.RefundOrder(orderID, userID, req.Reason)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, res)
+	response.OK(c, "Order refunded successfully", refundResult)
 }

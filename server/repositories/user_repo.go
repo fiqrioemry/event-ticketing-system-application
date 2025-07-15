@@ -2,8 +2,10 @@ package repositories
 
 import (
 	"errors"
-	"server/dto"
-	"server/models"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+
+	"github.com/fiqrioemry/event_ticketing_system_app/server/models"
 
 	"gorm.io/gorm"
 )

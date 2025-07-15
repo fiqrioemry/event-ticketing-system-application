@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"server/dto"
-	"server/services"
-	"server/utils"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
-	"net/http"
-	customErr "server/errors"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
 
+	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
+
+	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +22,7 @@ func NewTicketHandler(service services.TicketService) *TicketHandler {
 func (h *TicketHandler) CreateTicket(c *gin.Context) {
 	eventID := c.Param("id")
 	if eventID == "" {
-		utils.HandleError(c, customErr.NewBadRequest("Event ID is required"))
+		response.Error(c, response.NewBadRequest("Event ID is required"))
 		return
 	}
 
@@ -31,12 +31,13 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.CreateTicket(req, eventID); err != nil {
-		utils.HandleError(c, err)
+	newTicket, err := h.service.CreateTicket(req, eventID)
+	if err != nil {
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Ticket created successfully"})
+	response.Created(c, "Ticket created successfully", newTicket)
 }
 
 func (h *TicketHandler) UpdateTicket(c *gin.Context) {
@@ -47,12 +48,13 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.UpdateTicket(id, req); err != nil {
-		utils.HandleError(c, err)
+	updatedTicket, err := h.service.UpdateTicket(id, req)
+	if err != nil {
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Ticket updated successfully"})
+	response.OK(c, "Ticket updated successfully", updatedTicket)
 }
 
 func (h *TicketHandler) GetTicketByID(c *gin.Context) {
@@ -60,20 +62,21 @@ func (h *TicketHandler) GetTicketByID(c *gin.Context) {
 
 	ticket, err := h.service.GetTicketByID(ticketID)
 	if err != nil {
-		utils.HandleError(c, err)
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, ticket)
+	response.OK(c, "Ticket retrieved successfully", ticket)
 }
 
 func (h *TicketHandler) DeleteTicket(c *gin.Context) {
-	id := c.Param("id")
+	ticketID := c.Param("id")
 
-	if err := h.service.DeleteTicket(id); err != nil {
-		utils.HandleError(c, err)
+	if err := h.service.DeleteTicket(ticketID); err != nil {
+		response.Error(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Ticket deleted successfully"})
+	response.OK(c, "Ticket deleted successfully", ticketID)
+
 }
