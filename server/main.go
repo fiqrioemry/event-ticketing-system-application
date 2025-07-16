@@ -59,7 +59,7 @@ func main() {
 		ginzap.Ginzap(utils.GetLogger(), time.RFC3339, true),
 		middleware.Recovery(),
 		middleware.CORS(),
-		middleware.RateLimiter(100, 60*time.Second),
+		// middleware.RateLimiter(100, 60*time.Second),
 		middleware.LimitFileSize(config.AppConfig.MaxFileSize),
 		middleware.APIKeyGateway(config.AppConfig.SkippedApiEndpoints),
 	)

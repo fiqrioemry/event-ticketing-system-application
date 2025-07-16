@@ -23,7 +23,7 @@ type AuthService interface {
 	Register(req *dto.RegisterRequest) error
 	Login(req *dto.LoginRequest) (*dto.AuthResponse, error)
 	VerifyOTP(email, otp string) (*dto.AuthResponse, error)
-	RefreshToken(c *gin.Context, refreshToken string) (string, error)
+	RefreshToken(c *gin.Context, refreshToken string) (*dto.ProfileResponse, string, error)
 }
 
 type authService struct {
@@ -115,7 +115,14 @@ func (s *authService) VerifyOTP(email, otp string) (*dto.AuthResponse, error) {
 		return nil, response.NewInternalServerError("Failed to generate refresh token", err)
 	}
 
+	userResponse := dto.ProfileResponse{
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Fullname: user.Fullname,
+		Avatar:   user.AvatarURL,
+	}
 	return &dto.AuthResponse{
+		User:         userResponse,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
@@ -132,7 +139,7 @@ func (s *authService) Login(req *dto.LoginRequest) (*dto.AuthResponse, error) {
 	if err != nil || user == nil || !utils.CheckPasswordHash(req.Password, user.Password) {
 		config.RedisClient.Incr(config.Ctx, redisKey)
 		config.RedisClient.Expire(config.Ctx, redisKey, 30*time.Minute)
-		return nil, response.NewUnauthorized("Invalid email or password")
+		return nil, response.NewBadRequest("Invalid email or password")
 	}
 
 	config.RedisClient.Del(config.Ctx, redisKey)
@@ -206,22 +213,29 @@ func (s *authService) Register(req *dto.RegisterRequest) error {
 	return nil
 }
 
-func (s *authService) RefreshToken(c *gin.Context, refreshToken string) (string, error) {
+func (s *authService) RefreshToken(c *gin.Context, refreshToken string) (*dto.ProfileResponse, string, error) {
 
 	userID, err := utils.DecodeRefreshToken(refreshToken)
 	if err != nil {
-		return "", response.NewUnauthorized("Invalid refresh token")
+		return nil, "", response.NewUnauthorized("Invalid refresh token")
 	}
 
 	user, err := s.user.GetUserByID(userID)
 	if err != nil || user == nil {
-		return "", response.NewNotFound("User not found").WithContext("userID", userID)
+		return nil, "", response.NewNotFound("User not found").WithContext("userID", userID)
+	}
+
+	userResponse := dto.ProfileResponse{
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Fullname: user.Fullname,
+		Avatar:   user.AvatarURL,
 	}
 
 	accessToken, err := utils.GenerateAccessToken(user.ID.String(), user.Role)
 	if err != nil {
-		return "", response.NewInternalServerError("Failed to generate access token", err)
+		return nil, "", response.NewInternalServerError("Failed to generate access token", err)
 	}
 
-	return accessToken, nil
+	return &userResponse, accessToken, nil
 }

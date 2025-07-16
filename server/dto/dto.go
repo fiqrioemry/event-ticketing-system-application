@@ -139,27 +139,27 @@ type TicketInfo struct {
 }
 
 type CreateEventRequest struct {
-	Title       string                `json:"title" binding:"required,min=5,max=150"`
-	Description string                `json:"description" binding:"required"`
-	Location    string                `json:"location" binding:"required"`
-	Date        time.Time             `json:"date" binding:"required"`
-	StartTime   int                   `json:"startTime" binding:"required,min=0,max=23"`
-	EndTime     int                   `json:"endTime" binding:"required,min=1,max=24"`
-	Status      string                `json:"status" binding:"required,oneof=active ongoing done cancelled"`
-	Tickets     []CreateTicketRequest `json:"tickets" binding:"required,min=1,dive"`
+	Title       string                `form:"title" binding:"required,min=5,max=150"`
+	Description string                `form:"description" binding:"required"`
+	Location    string                `form:"location" binding:"required"`
+	Date        time.Time             `form:"date" binding:"required"`
+	StartTime   int                   `form:"startTime" binding:"required,min=0,max=23"`
+	EndTime     int                   `form:"endTime" binding:"required,min=1,max=24"`
+	Status      string                `form:"status" binding:"required,oneof=active ongoing done cancelled"`
+	Tickets     []CreateTicketRequest `form:"tickets" binding:"required,min=1,dive"`
 
 	// For file upload (tidak di-unmarshal dari JSON)
-	Image    *multipart.FileHeader `json:"-"`
-	ImageURL string                `json:"-"`
+	Image    *multipart.FileHeader `form:"image" binding:"required"`
+	ImageURL string                `form:"-"`
 }
 
 type CreateTicketRequest struct {
-	Name          string  `json:"name" binding:"required,min=3,max=50"`
-	Price         float64 `json:"price" binding:"required,min=0"`
-	Quota         int     `json:"quota" binding:"required,min=1"`
-	Limit         int     `json:"limit" binding:"omitempty,min=1"`
-	Refundable    bool    `json:"isRefundable"`
-	RefundPercent int     `json:"refundPercent" binding:"omitempty,min=0,max=100"`
+	Name          string  `form:"name" binding:"required,min=3,max=50"`
+	Price         float64 `form:"price" binding:"required,min=0"`
+	Quota         int     `form:"quota" binding:"required,min=1"`
+	Limit         int     `form:"limit" binding:"omitempty,min=1"`
+	Refundable    bool    `form:"isRefundable"`
+	RefundPercent int     `form:"refundPercent" binding:"omitempty,min=0,max=100"`
 }
 
 // 3. TICKET  MODULE MANAGEMENT =============
