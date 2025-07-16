@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"os"
@@ -29,6 +30,14 @@ func GenerateOTP(length int) string {
 	}
 
 	return sb.String()
+}
+
+func GenerateResetToken() (string, error) {
+	bytes := make([]byte, 32) // 256-bit token
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }
 
 func GenerateSlug(input string) string {

@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
+	"net/http"
 
+	"github.com/fiqrioemry/event_ticketing_system_app/server/config"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
-
 	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
-
+	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 )
@@ -117,4 +117,74 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	utils.SetAccessTokenCookie(c, token)
 
 	response.OK(c, "Token refreshed successfully", user)
+}
+
+// step 1 : User requests password reset
+func (h *UserHandler) ForgotPassword(c *gin.Context) {
+
+	var req dto.ForgotPasswordRequest
+	if !utils.BindAndValidateJSON(c, &req) {
+		return
+	}
+
+	if err := h.service.ForgotPassword(c, &req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.OK(c, "Password reset link sent successfully", nil)
+
+}
+
+// step 2 : validate reset token and reset password
+func (h *UserHandler) ValidateResetToken(c *gin.Context) {
+	token := c.Query("token")
+
+	email, err := h.service.ValidateToken(token)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.OK(c, "Reset token is valid", email)
+}
+
+// step 3 : reset password
+func (h *UserHandler) ResetPassword(c *gin.Context) {
+	var req dto.ResetPasswordRequest
+	if !utils.BindAndValidateJSON(c, &req) {
+		return
+	}
+
+	if err := h.service.ResetPassword(&req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.OK(c, "Password has been reset successfully", nil)
+}
+
+func (h *UserHandler) GoogleOAuthRedirect(c *gin.Context) {
+	url := h.service.GetGoogleOAuthURL()
+	c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func (h *UserHandler) GoogleOAuthCallback(c *gin.Context) {
+	code := c.Query("code")
+	if code == "" {
+		response.Error(c, response.NewBadRequest("Authorization code is missing"))
+		return
+	}
+
+	tokens, err := h.service.HandleGoogleOAuthCallback(code)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	utils.SetAccessTokenCookie(c, tokens.AccessToken)
+
+	utils.SetRefreshTokenCookie(c, tokens.RefreshToken)
+
+	c.Redirect(http.StatusTemporaryRedirect, config.AppConfig.FrontendRedirectURL)
 }

@@ -14,7 +14,7 @@ func AuthRoutes(r *gin.RouterGroup, h *handlers.AuthHandler) {
 	auth.POST("/login", h.Login)
 	auth.POST("/logout", h.Logout)
 	auth.POST("/register", h.Register)
-	auth.POST("/send-otp", h.ResendOTP)
+	auth.POST("/resend-otp", h.ResendOTP)
 	auth.POST("/verify-otp", h.VerifyOTP)
 	auth.POST("/refresh-token", h.RefreshToken)
 

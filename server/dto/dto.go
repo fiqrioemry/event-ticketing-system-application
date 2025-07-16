@@ -77,6 +77,30 @@ type UserDetailResponse struct {
 	JoinedAt time.Time `json:"joinedAt"`
 }
 
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword" binding:"required,min=6"`
+	NewPassword     string `json:"newPassword" binding:"required,min=6"`
+	ConfirmPassword string `json:"confirmPassword" binding:"required,min=6"`
+}
+type ForgotPasswordRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+type ResetPasswordRequest struct {
+	Token           string `json:"token" binding:"required"`
+	NewPassword     string `json:"newPassword" binding:"required,min=6"`
+	ConfirmPassword string `json:"confirmPassword" binding:"required,min=6"`
+}
+type ForgotPasswordResponse struct {
+	Message string `json:"message"`
+	Email   string `json:"email"`
+}
+type ResetTokenData struct {
+	UserID    string    `json:"userId"`
+	Email     string    `json:"email"`
+	ExpiresAt time.Time `json:"expiresAt"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 // 2. EVENT MODULE MANAGEMENT =============
 type EventQueryParams struct {
 	Q         string `form:"search"`
