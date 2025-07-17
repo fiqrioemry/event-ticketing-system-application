@@ -191,7 +191,7 @@ func SendTemplateEmail(templateName, toEmail string, data EmailData) error {
 
 	// Set default values if not provided
 	if data.AppName == "" {
-		data.AppName = getEnvOrDefault("APP_NAME", "Asset Management System")
+		data.AppName = getEnvOrDefault("APP_NAME", "Ticketing Event System")
 	}
 	if data.CompanyName == "" {
 		data.CompanyName = getEnvOrDefault("COMPANY_NAME", "Your Company")

@@ -251,6 +251,7 @@ type OrderResponse struct {
 	Email      string    `json:"email"`
 	Phone      string    `json:"phone"`
 	TotalPrice float64   `json:"totalPrice"`
+	PaymentURL string    `json:"paymentUrl"`
 	Status     string    `json:"status"`
 	CreatedAt  time.Time `json:"createdAt"`
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/fiqrioemry/event_ticketing_system_app/server/middleware"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/routes"
-	"github.com/fiqrioemry/event_ticketing_system_app/server/seeders"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
@@ -38,7 +37,7 @@ func main() {
 		LogErrorResponses:   true,
 	})
 
-	seeders.ResetDatabase(db)
+	// seeders.ResetDatabase(db)
 
 	// ========== initialisasi layer ============
 	repo := repositories.InitRepositories(db)

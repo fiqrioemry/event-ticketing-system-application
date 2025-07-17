@@ -58,51 +58,51 @@ func (r *orderRepository) GetMyOrders(userID string, params dto.OrderQueryParams
 	var orders []models.Order
 	var count int64
 
-	db := r.db.Model(&models.Order{}).Preload("Event").Where("user_id = ?", userID)
+	// Base query dengan JOIN explicit
+	db := r.db.Model(&models.Order{}).
+		Joins("LEFT JOIN events ON orders.event_id = events.id").
+		Where("orders.user_id = ?", userID)
 
-	// Search by fullname or email
+	// Search by event name atau description
 	if params.Q != "" {
 		like := "%" + params.Q + "%"
-		db = db.Where("fullname LIKE ? OR email LIKE ?", like, like)
+		db = db.Where("events.title LIKE ? OR events.description LIKE ?", like, like)
 	}
 
 	// Status filter
 	if params.Status != "" && params.Status != "all" {
-		db = db.Where("status = ?", params.Status)
+		db = db.Where("orders.status = ?", params.Status)
 	}
 
-	// Sorting
+	// Sorting dengan table prefix
 	switch params.Sort {
 	case "name_asc":
-		db = db.Order("fullname asc")
+		db = db.Order("events.title ASC")
 	case "name_desc":
-		db = db.Order("fullname desc")
-	case "email_asc":
-		db = db.Order("email asc")
-	case "email_desc":
-		db = db.Order("email desc")
+		db = db.Order("events.title DESC")
 	case "price_asc":
-		db = db.Order("total_price asc")
+		db = db.Order("orders.total_price ASC")
 	case "price_desc":
-		db = db.Order("total_price desc")
+		db = db.Order("orders.total_price DESC")
 	case "created_at_asc":
-		db = db.Order("created_at asc")
+		db = db.Order("orders.created_at ASC")
 	case "created_at_desc":
-		db = db.Order("created_at desc")
+		db = db.Order("orders.created_at DESC")
 	default:
-		db = db.Order("created_at desc")
+		db = db.Order("orders.created_at DESC")
 	}
 
-	// Pagination
-	offset := (params.Page - 1) * params.Limit
-
-	// Count total
+	// Count total dengan field yang tepat
 	if err := db.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// Fetch paginated result
-	if err := db.Limit(params.Limit).Offset(offset).Find(&orders).Error; err != nil {
+	// Pagination dan fetch result dengan Preload
+	offset := (params.Page - 1) * params.Limit
+	if err := db.Preload("Event").
+		Limit(params.Limit).
+		Offset(offset).
+		Find(&orders).Error; err != nil {
 		return nil, 0, err
 	}
 

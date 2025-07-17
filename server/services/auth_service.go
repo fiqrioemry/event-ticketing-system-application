@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,8 @@ import (
 	"github.com/fiqrioemry/event_ticketing_system_app/server/models"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
+	"golang.org/x/oauth2"
+	"google.golang.org/api/idtoken"
 
 	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
@@ -24,6 +27,16 @@ type AuthService interface {
 	Login(req *dto.LoginRequest) (*dto.AuthResponse, error)
 	VerifyOTP(email, otp string) (*dto.AuthResponse, error)
 	RefreshToken(c *gin.Context, refreshToken string) (*dto.ProfileResponse, string, error)
+
+	// password reset features
+	ForgotPassword(c *gin.Context, req *dto.ForgotPasswordRequest) error
+	ValidateToken(token string) (string, error)
+	ResetPassword(req *dto.ResetPasswordRequest) error
+
+	// Google OAuth features
+	GetGoogleOAuthURL() string
+	GoogleSignIn(tokenId string) (*dto.AuthResponse, error)
+	HandleGoogleOAuthCallback(code string) (*dto.AuthResponse, error)
 }
 
 type authService struct {
@@ -67,7 +80,7 @@ func (s *authService) Register(req *dto.RegisterRequest) error {
 	}
 
 	// Store user registration data
-	otpData := map[string]interface{}{
+	otpData := map[string]any{
 		"fullname":   req.Fullname,
 		"password":   hashedPassword,
 		"email":      req.Email,
@@ -86,11 +99,8 @@ func (s *authService) Register(req *dto.RegisterRequest) error {
 		return response.NewInternalServerError("Failed to save user data to Redis", err)
 	}
 
-	// Send OTP email
-	subject := "One-Time Password (OTP)"
-	body := fmt.Sprintf("Your OTP code is %s. This code will expire in 5 minutes.", otp)
-
-	if err := utils.SendEmail(subject, req.Email, otp, body); err != nil {
+	// send OTP email
+	if err := utils.SendOTPEmail(req.Email, req.Fullname, otp, 15*60*time.Second); err != nil {
 		// Clean up Redis data if email fails
 		config.RedisClient.Del(config.Ctx, otpKey)
 		config.RedisClient.Del(config.Ctx, otpDataKey)
@@ -121,7 +131,7 @@ func (s *authService) ResendOTP(email string) error {
 	}
 
 	// Parse existing data
-	var otpData map[string]interface{}
+	var otpData map[string]any
 	if err := json.Unmarshal([]byte(otpDataStr), &otpData); err != nil {
 		return response.NewInternalServerError("Invalid registration data", err)
 	}
@@ -147,6 +157,7 @@ func (s *authService) ResendOTP(email string) error {
 	// Send new OTP email
 	subject := "Your New OTP Code"
 	body := fmt.Sprintf("Your new OTP code is %s. This code will expire in 5 minutes.", newOTP)
+
 	if err := utils.SendEmail(subject, email, newOTP, body); err != nil {
 		return response.NewInternalServerError("Failed to send OTP email", err)
 	}
@@ -186,7 +197,7 @@ func (s *authService) VerifyOTP(email, otp string) (*dto.AuthResponse, error) {
 	}
 
 	// Parse user data
-	var userData map[string]interface{}
+	var userData map[string]any
 	if err := json.Unmarshal([]byte(userDataStr), &userData); err != nil {
 		return nil, response.NewInternalServerError("Failed to parse registration data", err)
 	}
@@ -204,11 +215,11 @@ func (s *authService) VerifyOTP(email, otp string) (*dto.AuthResponse, error) {
 
 	// Create user
 	user := models.User{
-		ID:        uuid.New(),
-		Email:     email,
-		Fullname:  fullname,
-		Password:  password,
-		AvatarURL: utils.RandomUserAvatar(fullname),
+		ID:       uuid.New(),
+		Email:    email,
+		Fullname: fullname,
+		Password: password,
+		Avatar:   utils.RandomUserAvatar(fullname),
 	}
 
 	// Save user to database
@@ -237,7 +248,7 @@ func (s *authService) VerifyOTP(email, otp string) (*dto.AuthResponse, error) {
 		ID:       user.ID.String(),
 		Email:    user.Email,
 		Fullname: user.Fullname,
-		Avatar:   user.AvatarURL,
+		Avatar:   user.Avatar,
 	}
 
 	return &dto.AuthResponse{
@@ -278,7 +289,7 @@ func (s *authService) Login(req *dto.LoginRequest) (*dto.AuthResponse, error) {
 		Email:    user.Email,
 		Fullname: user.Fullname,
 		Balance:  user.Balance,
-		Avatar:   user.AvatarURL,
+		Avatar:   user.Avatar,
 		Role:     user.Role,
 		JoinedAt: user.CreatedAt,
 	}
@@ -306,7 +317,7 @@ func (s *authService) RefreshToken(c *gin.Context, refreshToken string) (*dto.Pr
 		ID:       user.ID.String(),
 		Email:    user.Email,
 		Fullname: user.Fullname,
-		Avatar:   user.AvatarURL,
+		Avatar:   user.Avatar,
 	}
 
 	accessToken, err := utils.GenerateAccessToken(user.ID.String(), user.Role)
@@ -315,4 +326,222 @@ func (s *authService) RefreshToken(c *gin.Context, refreshToken string) (*dto.Pr
 	}
 
 	return &userResponse, accessToken, nil
+}
+
+func (s *authService) ForgotPassword(c *gin.Context, req *dto.ForgotPasswordRequest) error {
+	// Check rate limit attempts
+	attemptsKey := "asset_app:forgot_password_attempts:" + c.ClientIP()
+	if err := utils.CheckForgotPasswordAttempts(c.ClientIP(), 3); err != nil {
+		return response.NewTooManyRequests("Too many forgot password attempts, please try again later")
+	}
+
+	// Check token existence
+	existingTokenKey := "asset_app:reset_token:" + req.Email
+	if utils.KeyExists(existingTokenKey) {
+		return response.NewTooManyRequests("Password reset link has already been sent. Please check your email or wait before requesting again.")
+	}
+
+	// Check if email exists
+	user, err := s.user.GetUserByEmail(req.Email)
+	if err != nil {
+		// Increment attempts
+		utils.IncrementAttempts(attemptsKey)
+		return nil // Don't reveal if email exists for security reasons
+	}
+
+	if user == nil {
+		utils.IncrementAttempts(attemptsKey)
+		return nil // Don't reveal if email exists
+	}
+
+	// Generate reset token
+	resetToken, err := utils.GenerateResetToken()
+	if err != nil {
+		return response.NewInternalServerError("Failed to generate reset token", err)
+	}
+
+	// Prepare token data
+	tokenData := map[string]any{
+		"userId":    user.ID.String(),
+		"email":     user.Email,
+		"createdAt": time.Now().Unix(),
+		"expiresAt": time.Now().Add(1 * time.Hour).Unix(),
+	}
+
+	// Store reset token data
+	resetTokenKey := "asset_app:password_reset:" + resetToken
+	if err := utils.AddKeys(resetTokenKey, tokenData, 1*time.Hour); err != nil {
+		return response.NewInternalServerError("Failed to store reset token", err)
+	}
+
+	// Store email -
+	emailTokenKey := "asset_app:reset_token:" + user.Email
+	if err := utils.AddKeys(emailTokenKey, resetToken, 1*time.Hour); err != nil {
+		// Clean up reset token
+		utils.DeleteKeys(resetTokenKey)
+		return response.NewInternalServerError("Failed to store email token mapping", err)
+	}
+
+	// Create reset link
+	frontendURL := config.AppConfig.FrontendURL
+
+	resetLink := fmt.Sprintf("%s/reset-password?token=%s", frontendURL, resetToken)
+
+	// Send reset password email
+	if err := utils.SendResetPasswordEmail(user.Email, user.Fullname, resetLink, 1*time.Hour); err != nil {
+		// Clean up tokens
+		utils.DeleteKeys(resetTokenKey, emailTokenKey)
+		return response.NewInternalServerError("Failed to send reset password email", err)
+	}
+
+	// Increment attempts
+	go utils.IncrementAttempts(attemptsKey)
+
+	return nil
+}
+
+func (s *authService) ResetPassword(req *dto.ResetPasswordRequest) error {
+
+	// check password match
+	if req.NewPassword != req.ConfirmPassword {
+		return response.NewBadRequest("New password and confirm password do not match")
+	}
+
+	resetTokenKey := "asset_app:password_reset:" + req.Token
+	var tokenData map[string]any
+
+	// get token from cache
+	if err := utils.GetKey(resetTokenKey, &tokenData); err != nil {
+		return response.NewBadRequest("Invalid or expired reset token")
+	}
+
+	email, ok := tokenData["email"].(string)
+	if !ok {
+		return response.NewBadRequest("Invalid reset token data")
+	}
+
+	userID, ok := tokenData["userId"].(string)
+	if !ok {
+		return response.NewBadRequest("Invalid reset token data")
+	}
+
+	// check user exists
+	user, err := s.user.GetUserByID(userID)
+	if err != nil {
+		return response.NewNotFound("User not found")
+	}
+
+	// hash new password
+	hashedPassword, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		return response.NewInternalServerError("Failed to hash password", err)
+	}
+
+	// update user password
+	user.Password = hashedPassword
+
+	if err := s.user.UpdateUser(user); err != nil {
+		return response.NewInternalServerError("Failed to update password", err)
+	}
+
+	// delete related cache keys
+	go utils.DeleteKeys(resetTokenKey)
+	go utils.DeleteKeys("asset_app:reset_token:" + email)
+	go utils.DeleteKeys("asset_app:forgot_password_attempts:" + email)
+
+	return nil
+}
+
+func (s *authService) ValidateToken(token string) (string, error) {
+
+	resetTokenKey := "asset_app:password_reset:" + token
+	var tokenData map[string]any
+	// check token existence
+	if err := utils.GetKey(resetTokenKey, &tokenData); err != nil {
+		return "", response.NewBadRequest("Invalid or expired reset token")
+	}
+
+	// Check token age
+	createdAt, ok := tokenData["createdAt"].(float64)
+	if !ok {
+		return "", response.NewBadRequest("Invalid token data")
+	}
+
+	tokenAge := time.Since(time.Unix(int64(createdAt), 0))
+	if tokenAge > 1*time.Hour {
+		utils.DeleteKeys(resetTokenKey)
+		return "", response.NewBadRequest("Reset token has expired")
+	}
+
+	// email for display
+	email, _ := tokenData["email"].(string)
+
+	return email, nil
+
+}
+
+func (s *authService) GoogleSignIn(tokenId string) (*dto.AuthResponse, error) {
+	payload, err := idtoken.Validate(context.Background(), tokenId, config.AppConfig.GoogleClientID)
+	if err != nil {
+		return nil, response.NewUnauthorized("Invalid Google ID token")
+	}
+
+	email, ok := payload.Claims["email"].(string)
+	if !ok || email == "" {
+		return nil, response.NewNotFound("Email not found in token")
+	}
+
+	name, _ := payload.Claims["name"].(string)
+
+	user, err := s.user.GetUserByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+
+	// Jika user belum ada, buat user baru
+	if user == nil {
+		user = &models.User{
+			Email:    email,
+			Avatar:   utils.RandomUserAvatar(name),
+			Fullname: name,
+			Password: "-", // placeholder karena pakai OAuth
+		}
+
+		if err := s.user.CreateUser(user); err != nil {
+			return nil, err
+		}
+	}
+
+	accessToken, err := utils.GenerateAccessToken(user.ID.String(), user.Role)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := utils.GenerateRefreshToken(user.ID.String())
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+func (s *authService) GetGoogleOAuthURL() string {
+	return config.GoogleOAuthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+}
+
+func (s *authService) HandleGoogleOAuthCallback(code string) (*dto.AuthResponse, error) {
+	token, err := config.GoogleOAuthConfig.Exchange(context.Background(), code)
+	if err != nil {
+		return nil, response.NewUnauthorized("Failed to exchange Google OAuth code")
+	}
+
+	rawIDToken, ok := token.Extra("id_token").(string)
+	if !ok {
+		return nil, response.NewUnauthorized("ID token not found in Google OAuth response")
+	}
+
+	return s.GoogleSignIn(rawIDToken)
 }

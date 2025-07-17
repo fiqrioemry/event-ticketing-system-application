@@ -15,44 +15,44 @@ func SeedAll(db *gorm.DB) {
 	password, _ := bcrypt.GenerateFromPassword([]byte("123456"), 10)
 
 	admin := models.User{
-		ID:        uuid.MustParse("6b0a80e0-7609-4665-b1c3-b125b58d5b12"),
-		Fullname:  "Event Admin",
-		Email:     "admin@event.com",
-		Password:  string(password),
-		Role:      "admin",
-		AvatarURL: "https://api.dicebear.com/6.x/initials/svg?seed=admin",
+		ID:       uuid.MustParse("6b0a80e0-7609-4665-b1c3-b125b58d5b12"),
+		Fullname: "Event Admin",
+		Email:    "admin@event.com",
+		Password: string(password),
+		Role:     "admin",
+		Avatar:   "https://api.dicebear.com/6.x/initials/svg?seed=admin",
 	}
 	customer1 := models.User{
-		ID:        uuid.MustParse("e267b1a5-263f-4701-a89a-91e61baf5ec0"),
-		Fullname:  "Alice Customer",
-		Email:     "alice@event.com",
-		Password:  string(password),
-		Role:      "user",
-		AvatarURL: "https://api.dicebear.com/6.x/initials/svg?seed=alice",
+		ID:       uuid.MustParse("e267b1a5-263f-4701-a89a-91e61baf5ec0"),
+		Fullname: "Alice Customer",
+		Email:    "alice@event.com",
+		Password: string(password),
+		Role:     "user",
+		Avatar:   "https://api.dicebear.com/6.x/initials/svg?seed=alice",
 	}
 	customer2 := models.User{
-		ID:        uuid.MustParse("84dfb0de-e90e-4d9d-95c3-7980d79cf66e"),
-		Fullname:  "Bob Customer",
-		Email:     "bob@event.com",
-		Password:  string(password),
-		Role:      "user",
-		AvatarURL: "https://api.dicebear.com/6.x/initials/svg?seed=bob",
+		ID:       uuid.MustParse("84dfb0de-e90e-4d9d-95c3-7980d79cf66e"),
+		Fullname: "Bob Customer",
+		Email:    "bob@event.com",
+		Password: string(password),
+		Role:     "user",
+		Avatar:   "https://api.dicebear.com/6.x/initials/svg?seed=bob",
 	}
 	customer3 := models.User{
-		ID:        uuid.MustParse("bdb598a3-1c86-4e95-93d2-65cda21b4b33"),
-		Fullname:  "Charlie Customer",
-		Email:     "charlie@event.com",
-		Password:  string(password),
-		Role:      "user",
-		AvatarURL: "https://api.dicebear.com/6.x/initials/svg?seed=charlie",
+		ID:       uuid.MustParse("bdb598a3-1c86-4e95-93d2-65cda21b4b33"),
+		Fullname: "Charlie Customer",
+		Email:    "charlie@event.com",
+		Password: string(password),
+		Role:     "user",
+		Avatar:   "https://api.dicebear.com/6.x/initials/svg?seed=charlie",
 	}
 	customer4 := models.User{
-		ID:        uuid.MustParse("bdb598a3-1c86-5e95-93d2-65cda21b4b33"),
-		Fullname:  "Maulana Customer",
-		Email:     "maulana@event.com",
-		Password:  string(password),
-		Role:      "user",
-		AvatarURL: "https://api.dicebear.com/6.x/initials/svg?seed=maulana",
+		ID:       uuid.MustParse("bdb598a3-1c86-5e95-93d2-65cda21b4b33"),
+		Fullname: "Maulana Customer",
+		Email:    "maulana@event.com",
+		Password: string(password),
+		Role:     "user",
+		Avatar:   "https://api.dicebear.com/6.x/initials/svg?seed=maulana",
 	}
 	db.Create(&admin)
 	db.Create(&customer1)

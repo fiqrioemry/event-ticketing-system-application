@@ -150,6 +150,10 @@ func (s *orderService) CreateNewOrder(req dto.CreateOrderRequest, userID string)
 		if err != nil {
 			return "", response.NewInternalServerError("failed to create stripe session", err)
 		}
+		order.PaymentURL = sess.URL
+		if err := tx.Save(order).Error; err != nil {
+			return "", response.NewInternalServerError("failed to update order with payment URL", err)
+		}
 
 		result = &dto.CheckoutSessionResponse{
 			PaymentID: paymentID.String(),
@@ -183,6 +187,7 @@ func (s *orderService) GetMyOrders(userID string, params dto.OrderQueryParams) (
 			Email:      o.Email,
 			Phone:      o.Phone,
 			TotalPrice: o.TotalPrice,
+			PaymentURL: o.PaymentURL,
 			Status:     o.Status,
 			CreatedAt:  o.CreatedAt,
 		})

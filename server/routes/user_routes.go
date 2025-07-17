@@ -2,10 +2,8 @@
 package routes
 
 import (
-	"github.com/fiqrioemry/event_ticketing_system_app/server/middleware"
-
 	"github.com/fiqrioemry/event_ticketing_system_app/server/handlers"
-
+	"github.com/fiqrioemry/event_ticketing_system_app/server/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,5 +13,6 @@ func UserRoutes(r *gin.RouterGroup, h *handlers.UserHandler) {
 	user.GET("/:id", middleware.RoleOnly("admin"), h.GetUserDetail)
 	user.GET("/me", h.GetMyProfile)
 	user.PUT("/me", h.UpdateProfile)
+	user.PUT("/change-password", h.ChangePassword)
 
 }
