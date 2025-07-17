@@ -120,7 +120,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 }
 
 // step 1 : User requests password reset
-func (h *UserHandler) ForgotPassword(c *gin.Context) {
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 
 	var req dto.ForgotPasswordRequest
 	if !utils.BindAndValidateJSON(c, &req) {
@@ -137,7 +137,7 @@ func (h *UserHandler) ForgotPassword(c *gin.Context) {
 }
 
 // step 2 : validate reset token and reset password
-func (h *UserHandler) ValidateResetToken(c *gin.Context) {
+func (h *AuthHandler) ValidateResetToken(c *gin.Context) {
 	token := c.Query("token")
 
 	email, err := h.service.ValidateToken(token)
@@ -150,7 +150,7 @@ func (h *UserHandler) ValidateResetToken(c *gin.Context) {
 }
 
 // step 3 : reset password
-func (h *UserHandler) ResetPassword(c *gin.Context) {
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req dto.ResetPasswordRequest
 	if !utils.BindAndValidateJSON(c, &req) {
 		return
@@ -164,12 +164,12 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 	response.OK(c, "Password has been reset successfully", nil)
 }
 
-func (h *UserHandler) GoogleOAuthRedirect(c *gin.Context) {
+func (h *AuthHandler) GoogleOAuthRedirect(c *gin.Context) {
 	url := h.service.GetGoogleOAuthURL()
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
-func (h *UserHandler) GoogleOAuthCallback(c *gin.Context) {
+func (h *AuthHandler) GoogleOAuthCallback(c *gin.Context) {
 	code := c.Query("code")
 	if code == "" {
 		response.Error(c, response.NewBadRequest("Authorization code is missing"))

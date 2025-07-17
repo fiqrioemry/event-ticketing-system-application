@@ -31,13 +31,13 @@ func (h *OrderHandler) CreateNewOrder(c *gin.Context) {
 	}
 
 	// create order record
-	orderID, err := h.service.CreateNewOrder(req, userID)
+	newOrder, err := h.service.CreateNewOrder(req, userID)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.Created(c, "Order created successfully", orderID)
+	response.Created(c, "Order created successfully", newOrder)
 }
 
 func (h *OrderHandler) GetMyOrders(c *gin.Context) {

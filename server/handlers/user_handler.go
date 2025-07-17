@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
 	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
@@ -40,6 +43,8 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
+	log.Println("Updating profile for user:", req.Avatar)
+	fmt.Println("Updating profile for user:", req.Avatar)
 	if req.Avatar != nil && req.Avatar.Filename != "" {
 		imageURL, err := utils.UploadImageWithValidation(req.Avatar)
 		if err != nil {
@@ -90,4 +95,20 @@ func (h *UserHandler) GetUserDetail(c *gin.Context) {
 	}
 
 	response.OK(c, "User details retrieved successfully", user)
+}
+
+func (h *UserHandler) ChangePassword(c *gin.Context) {
+	userID := utils.MustGetUserID(c)
+
+	var req dto.ChangePasswordRequest
+	if !utils.BindAndValidateJSON(c, &req) {
+		return
+	}
+
+	if err := h.service.ChangePassword(userID, &req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.OK(c, "Password changed successfully", nil)
 }
