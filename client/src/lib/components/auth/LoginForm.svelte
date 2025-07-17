@@ -12,7 +12,6 @@
 	import FormFooter from './FormFooter.svelte';
 	import { goto } from '$app/navigation';
 
-	let redirectTo = '/';
 	let errors: ValidationErrors = {};
 
 	let loginForm = {
@@ -64,8 +63,8 @@
 			required
 			id="email"
 			label="Email Address"
-			disabled={$authLoading}
 			error={errors.email}
+			disabled={$authLoading}
 			bind:value={loginForm.email}
 			placeholder="Enter your email address"
 		/>
@@ -96,8 +95,6 @@
 
 	<!-- Social Login -->
 	<GoogleProvider />
-
-	Form
 
 	<!-- Footer -->
 	<FormFooter buttonText="Sign up" onClick={handleNavigate} description="Don't have an account?" />

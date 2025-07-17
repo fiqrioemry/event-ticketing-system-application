@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { Loader2, ArrowLeft } from '@lucide/svelte';
 	import FormFooter from './FormFooter.svelte';
 	import FormHeader from './FormHeader.svelte';
-	import type { RegisterRequest, VerifyOTPRequest } from '$lib/types/api';
+	import { Loader2, ArrowLeft } from '@lucide/svelte';
 	import GoogleProvider from './GoogleProvider.svelte';
 	import { registerValidationRules } from '$lib/utils/dto.validation';
 	import ErrorMessage from '$lib/components/shared/ErrorMessage.svelte';
+	import type { RegisterRequest, VerifyOTPRequest } from '$lib/types/api';
 	import SubmitButton from '$lib/components/form-input/SubmitButton.svelte';
 	import { authStore, authLoading, authError } from '$lib/stores/auth.store';
 	import { validateForm, type ValidationErrors } from '$lib/utils/validation';
@@ -20,10 +20,14 @@
 		VERIFY_OTP: 2
 	} as const;
 
+	type StepType = (typeof STEPS)[keyof typeof STEPS];
+
 	// State management
-	let currentStep = $state(STEPS.REGISTER);
+	let currentStep = $state<StepType>(STEPS.REGISTER);
 	let errors: ValidationErrors = $state({});
 	let termsAccepted = $state(false);
+	let resendCooldown = $state(0);
+	let resendTimer: ReturnType<typeof setInterval> | null = null;
 
 	// Form data
 	let formData = $state({
@@ -41,16 +45,40 @@
 			? formData.fullname && formData.email && formData.password && termsAccepted
 			: formData.otp.length === 6
 	);
+	const canResend = $derived(resendCooldown === 0 && !$authLoading);
 
 	// Clear errors when switching steps or input changes
 	$effect(() => {
 		errors = {};
 	});
 
+	// Cleanup timer on component destroy
+	$effect(() => {
+		return () => {
+			if (resendTimer) {
+				clearInterval(resendTimer);
+			}
+		};
+	});
+
 	// Form validation rules
 	const otpValidationRules = {
 		otp: { required: true, minLength: 6, maxLength: 6 }
 	};
+
+	// Start resend cooldown timer
+	function startResendCooldown() {
+		resendCooldown = 60; // 60 seconds cooldown
+		resendTimer = setInterval(() => {
+			resendCooldown--;
+			if (resendCooldown <= 0) {
+				if (resendTimer) {
+					clearInterval(resendTimer);
+					resendTimer = null;
+				}
+			}
+		}, 1000);
+	}
 
 	// Event handlers
 	async function handleRegistration() {
@@ -70,9 +98,22 @@
 				currentStep = STEPS.VERIFY_OTP;
 				// Clear sensitive data
 				formData.password = '';
+				// Start cooldown for initial OTP
+				startResendCooldown();
 			}
 		} catch (error) {
 			console.error('Registration failed:', error);
+		}
+	}
+
+	async function handleResendOtp() {
+		if (!canResend) return;
+
+		try {
+			await authStore.resendOtp(formData.email);
+			startResendCooldown();
+		} catch (error) {
+			console.error('Resend OTP failed:', error);
 		}
 	}
 
@@ -94,7 +135,8 @@
 		}
 	}
 
-	async function handleSubmit() {
+	async function handleSubmit(event: Event) {
+		event.preventDefault();
 		if (!canSubmit) return;
 
 		if (isRegistrationStep) {
@@ -108,6 +150,13 @@
 		currentStep = STEPS.REGISTER;
 		formData.otp = '';
 		authStore.clearError();
+
+		// Clear resend timer
+		if (resendTimer) {
+			clearInterval(resendTimer);
+			resendTimer = null;
+		}
+		resendCooldown = 0;
 	}
 
 	function resetAndNavigateToSignIn() {
@@ -118,9 +167,16 @@
 			password: '',
 			otp: ''
 		};
-		termsAccepted = false;
 		errors = {};
+		termsAccepted = false;
 		authStore.clearError();
+
+		// Clear resend timer
+		if (resendTimer) {
+			clearInterval(resendTimer);
+			resendTimer = null;
+		}
+		resendCooldown = 0;
 
 		goto('/signin');
 	}
@@ -139,7 +195,11 @@
 			<div class="flex flex-col items-center justify-center gap-4">
 				<Loader2 class="h-10 w-10 animate-spin text-blue-500" />
 				<p class="text-muted-foreground">
-					{isRegistrationStep ? 'Creating account...' : 'Verifying OTP...'}
+					{isRegistrationStep
+						? 'Creating account...'
+						: resendCooldown > 0
+							? 'Sending OTP...'
+							: 'Verifying OTP...'}
 				</p>
 			</div>
 		</div>
@@ -165,7 +225,7 @@
 			</button>
 		{/if}
 
-		<form on:submit|preventDefault={handleSubmit} class="space-y-4">
+		<form onsubmit={handleSubmit} class="space-y-4">
 			{#if $authError}
 				<ErrorMessage message={$authError.message} onclearError={authStore.clearError} />
 			{/if}
@@ -249,25 +309,29 @@
 				<div class="text-center">
 					<p class="text-sm text-gray-600">
 						Didn't receive the code?
-						<button
-							type="button"
-							onclick={() => handleRegistration()}
-							class="font-medium text-blue-600 hover:text-blue-800"
-							disabled={$authLoading}
-						>
-							Resend
-						</button>
+						{#if canResend}
+							<button
+								type="button"
+								class="font-medium text-blue-600 transition-colors hover:text-blue-800"
+								onclick={handleResendOtp}
+							>
+								Resend
+							</button>
+						{:else}
+							<span class="font-medium text-gray-400">
+								Resend in {resendCooldown}s
+							</span>
+						{/if}
 					</p>
 				</div>
 			{/if}
 
-			<!-- Submit Button -->
 			<SubmitButton
 				variant="primary"
-				className="h-12 w-full"
-				disabled={!canSubmit}
 				isLoading={$authLoading}
+				disabled={!canSubmit || $authLoading}
 				buttonText={isRegistrationStep ? 'Create Account' : 'Verify Email'}
+				className="h-12 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
 				buttonLoadingText={isRegistrationStep ? 'Creating account...' : 'Verifying...'}
 			/>
 		</form>

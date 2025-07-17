@@ -9,7 +9,7 @@
 		{description}
 		<button
 			on:click={onClick}
-			class="font-medium text-blue-500 transition-colors hover:text-blue-500/80"
+			class="cursor-pointer font-medium text-blue-500 transition-colors hover:text-blue-500/80"
 		>
 			{buttonText}
 		</button>
