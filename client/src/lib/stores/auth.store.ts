@@ -1,25 +1,24 @@
+import type {
+	User,
+	AuthState,
+	LoginRequest,
+	RegisterRequest,
+	VerifyOTPRequest,
+	ForgotPasswordRequest,
+	ResetPasswordRequest,
+	GoogleOAuthData
+} from '$lib/types/api';
 import { toast } from 'svelte-sonner';
 import { goto } from '$app/navigation';
 import { writable, derived } from 'svelte/store';
 import * as auth from '$lib/services/auth.service';
 import { createStoreActions } from '$lib/utils/store';
-import type { User, LoginRequest, RegisterRequest, AuthState } from '$lib/types/api';
 
 const initialAuthState: AuthState = {
 	error: null,
 	user: null,
 	isLoading: false,
 	isAuthenticated: false
-};
-
-const setUserInStore = (update: any, user: User | null) => {
-	update((state: AuthState) => ({
-		...state,
-		user,
-		isAuthenticated: !!user,
-		error: null,
-		isLoading: false
-	}));
 };
 
 function createAuthStore() {
@@ -29,67 +28,144 @@ function createAuthStore() {
 	return {
 		subscribe,
 
-		async login(credentials: LoginRequest, redirectTo: string = '/') {
-			actions.clearError(update);
-			actions.setLoading(update, true);
+		async login(credentials: LoginRequest) {
+			this.setLoading(true);
 
 			try {
 				const response = await auth.login(credentials);
-				const user = response.data;
-				setUserInStore(update, user);
+
+				this.setUser(response.data);
 				toast.success(response.message || 'Login successful');
-				goto(redirectTo);
+				goto('/user/profile');
 				return response;
 			} catch (error: any) {
-				const message = error.response?.data?.message || error.message || 'Login failed';
-				actions.setError(update, { message });
-				toast.error(message);
-
-				throw error; // Re-throw for component handling if needed
+				this.setError(error, 'Login failed');
+				throw error;
 			}
 		},
 
-		async register(userData: RegisterRequest, redirectTo: string = '/dashboard') {
-			actions.clearError(update);
-			actions.setLoading(update, true);
+		async register(userData: RegisterRequest) {
+			this.setLoading(true);
 
 			try {
 				const response = await auth.register(userData);
-				const user = response.data;
-				setUserInStore(update, user);
-				toast.success(response.message || 'Registration successful');
-				goto(redirectTo);
+				this.setLoading(false);
+				toast.success(response.message || 'Please check your email to verify your account');
 				return response;
 			} catch (error: any) {
-				const message = error.response?.data?.message || error.message || 'Registration failed';
-				actions.setError(update, { message });
-				toast.error(message);
+				this.setError(error, 'Registration failed');
+				throw error;
+			}
+		},
+
+		async resendOtp(email: string) {
+			this.setLoading(true);
+			try {
+				const response = await auth.resendOTP({ email });
+				this.setLoading(false);
+				toast.success(response.message || 'OTP sent successfully');
+			} catch (error: any) {
+				this.setError(error, 'Failed to resend OTP');
+				throw error;
+			}
+		},
+
+		async verifyOtp(otpRequest: VerifyOTPRequest) {
+			this.setLoading(true);
+			try {
+				const response = await auth.verifyOTP(otpRequest);
+
+				this.setUser(response.data);
+				toast.success(response.message || 'Registration successful');
+				goto('/user/profile');
+			} catch (error: any) {
+				this.setError(error, 'Failed to verify OTP');
 				throw error;
 			}
 		},
 		async logout(redirectTo: string = '/signin') {
-			actions.setLoading(update, true);
+			this.setLoading(true);
 			try {
 				const response = await auth.logout();
 				toast.success(response.message || 'Logged out successfully');
 			} catch (error: any) {
-				toast.warning(error.response);
+				console.error(error.response?.data?.message || 'Logout failed');
 			} finally {
-				actions.reset(update, initialAuthState);
+				this.setUser(null);
 				goto(redirectTo);
 			}
 		},
 
+		async forgotPassword(forgotPasswordData: ForgotPasswordRequest) {
+			this.setLoading(true);
+
+			try {
+				const response = await auth.forgotPassword(forgotPasswordData);
+				this.setLoading(false);
+				toast.success(response.message || 'Password reset link sent to your email');
+				return response;
+			} catch (error: any) {
+				this.setError(error, 'Failed to send reset link');
+				toast.error('Failed to send reset link');
+				throw error;
+			}
+		},
+
+		async validateResetToken(token: string) {
+			this.setLoading(true);
+
+			try {
+				const response = await auth.validateResetToken(token);
+				this.setLoading(true);
+				return response;
+			} catch (error: any) {
+				this.setError(error, 'Invalid or expired reset token');
+				throw error;
+			}
+		},
+
+		async resetPassword(resetPasswordData: ResetPasswordRequest) {
+			this.setLoading(true);
+
+			try {
+				const response = await auth.resetPassword(resetPasswordData);
+
+				this.setUser(response.data);
+				toast.success(response.message || 'Password reset successful');
+				goto('/user/profile');
+				return response;
+			} catch (error: any) {
+				this.setError(error, 'Failed to reset password');
+				throw error;
+			}
+		},
+
+		async googleOAuthLogin(oauthData: GoogleOAuthData) {
+			this.setLoading(true);
+
+			try {
+				const response = await auth.googleOAuthCallback(oauthData.code, oauthData.state);
+				this.setUser(response.data);
+				toast.success(response.message || 'Google login successful');
+				goto('/user/profile');
+			} catch (error: any) {
+				this.setError(error, 'Google login failed');
+			}
+		},
+
+		getGoogleOAuthUrl(): string {
+			return auth.googleOAuthRedirect();
+		},
+
 		async checkAuth() {
-			actions.setLoading(update, true);
+			this.setLoading(true);
 
 			try {
 				const response = await auth.refreshToken();
-				const user = response.data;
-				setUserInStore(update, user);
+				this.setUser(response.data);
 				return response;
 			} catch (error: any) {
-				actions.reset(update, initialAuthState);
+				this.reset();
 				throw error;
 			}
 		},
@@ -97,21 +173,36 @@ function createAuthStore() {
 		async refreshSession() {
 			try {
 				const response = await auth.refreshToken();
-				const user = response.data;
-				setUserInStore(update, user);
+				this.setUser(response.data);
 				return response;
 			} catch (error: any) {
-				actions.reset(update, initialAuthState);
+				this.reset();
 				throw error;
 			}
 		},
 
 		setUser: (user: User | null) => {
-			setUserInStore(update, user);
+			update((state: AuthState) => ({
+				...state,
+				user,
+				isAuthenticated: !!user,
+				error: null,
+				isLoading: false
+			}));
+		},
+
+		setError: (error: any, fallback: string) => {
+			const message = error.response?.data?.message || fallback;
+			actions.setError(update, error);
+			console.error(message);
 		},
 
 		clearError: () => {
 			actions.clearError(update);
+		},
+
+		setLoading: (isLoading: boolean) => {
+			actions.setLoading(update, isLoading);
 		},
 
 		reset: () => {
@@ -121,9 +212,7 @@ function createAuthStore() {
 }
 
 export const authStore = createAuthStore();
-
-// Derived stores
-export const currentUser = derived(authStore, ($state) => $state.user);
+export const authUser = derived(authStore, ($state) => $state.user);
 export const authError = derived(authStore, ($state) => $state.error);
 export const authLoading = derived(authStore, ($state) => $state.isLoading);
 export const isAuthenticated = derived(authStore, ($state) => $state.isAuthenticated);

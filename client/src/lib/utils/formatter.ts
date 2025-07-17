@@ -6,7 +6,7 @@ export function formatDate(dateString: any) {
 	});
 }
 
-export function getAvatarInitials(fullname: string) {
+export function getAvatarInitials(fullname?: string) {
 	if (!fullname) return '';
 	return fullname
 		.split(' ')
@@ -14,6 +14,10 @@ export function getAvatarInitials(fullname: string) {
 		.join('')
 		.toUpperCase()
 		.substring(0, 2);
+}
+
+export function getQRCodeURL(qrData: any, size = 200) {
+	return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(qrData)}`;
 }
 
 export function formatPrice(price: number): string {

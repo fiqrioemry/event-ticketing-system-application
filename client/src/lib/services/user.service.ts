@@ -1,29 +1,23 @@
 // lib/services/user.service.ts
 import { authInstance } from '$lib/services/client';
-import type { UpdateProfileRequest, User, ApiResponse } from '$lib/types/api';
-
-// GET /api/user/ - Get all users (admin only)
-export const getAllUsers = async (): Promise<ApiResponse<User[]>> => {
-	const res = await authInstance.get('/user/');
-	return res.data;
-};
-
-// GET /api/user/:id - Get user detail by ID (admin only)
-export const getUserDetail = async (id: string | number): Promise<ApiResponse<User>> => {
-	const res = await authInstance.get(`/user/${id}`);
-	return res.data;
-};
+import type { UpdateProfileRequest, ChangePasswordRequest } from '$lib/types/api';
+import { buildFormData } from '$lib/utils/formatter';
 
 // GET /api/user/me - Get my profile
-export const getMyProfile = async (): Promise<ApiResponse<User>> => {
+export const getMyProfile = async () => {
 	const res = await authInstance.get('/user/me');
 	return res.data;
 };
 
 // PUT /api/user/me - Update my profile
-export const updateProfile = async (
-	profileData: UpdateProfileRequest
-): Promise<ApiResponse<User>> => {
-	const res = await authInstance.put('/user/me', profileData);
+export const updateProfile = async (profileData: UpdateProfileRequest) => {
+	const formData = buildFormData(profileData);
+	const res = await authInstance.put('/user/me', formData);
+	return res.data;
+};
+
+// GET /api/user/change-password - Get my profile
+export const changePassword = async (data: ChangePasswordRequest) => {
+	const res = await authInstance.put('/user/change-password', data);
 	return res.data;
 };

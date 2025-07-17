@@ -1,158 +1,104 @@
 // src/lib/stores/user.store.ts
+
+import type {
+	User,
+	Profile,
+	ProfileState,
+	UpdateProfileRequest,
+	ChangePasswordRequest
+} from '$lib/types/api';
 import { toast } from 'svelte-sonner';
+import { authStore } from './auth.store';
 import { writable, derived } from 'svelte/store';
-import { authStore } from '$lib/stores/auth.store';
-import { userService } from '$lib/services/user.service';
-import type { UserProfileResponse, UpdateUserRequest, ChangePasswordRequest } from '$lib/types/api';
+import * as user from '$lib/services/user.service';
+import { createStoreActions } from '$lib/utils/store';
 
-interface UserState {
-	isLoading: boolean;
-	error: string | null;
-	user: UserProfileResponse | null;
-}
-
-const initialState: UserState = {
-	isLoading: false,
+const initialState: ProfileState = {
 	error: null,
-	user: null
+	profile: null,
+	isLoading: false,
+	isUpdating: false
 };
 
 function createUserStore() {
-	const { subscribe, set, update } = writable<UserState>(initialState);
+	const { subscribe, set, update } = writable<ProfileState>(initialState);
+	const actions = createStoreActions<User>('user', 'user');
 
 	return {
 		subscribe,
 
-		/**
-		 * Get current user profile
-		 */
-		async getUser() {
-			this.setLoading(true);
-			this.clearError();
+		async changePassword(data: ChangePasswordRequest) {
+			actions.setUpdating(update, true);
 
 			try {
-				const response: any = await userService.getMe();
-
-				if (response.success) {
-					this.setUser(response.user);
-					// Sync dengan auth store
-					authStore.setUser(response.user);
-					return { success: true, user: response.user };
-				} else {
-					this.setError(response.message || 'Failed to get user profile');
-					return { success: false, error: response.message };
-				}
-			} catch (error: any) {
-				const errorMessage = error.response?.data?.message || 'Failed to get user profile';
-				this.setError(errorMessage);
-				return { success: false, error: errorMessage };
-			} finally {
-				this.setLoading(false);
-			}
-		},
-
-		/**
-		 * Update user profile
-		 */
-		async updateUser(userData: UpdateUserRequest) {
-			this.setLoading(true);
-			this.clearError();
-
-			try {
-				const response: any = await userService.updateUser(userData);
-
-				if (response.success) {
-					this.setUser(response.user);
-					// Sync dengan auth store
-					authStore.setUser(response.user);
-
-					// Success toast
-					toast.success('Profile updated successfully', {
-						description: response.message || 'Your profile has been updated.'
-					});
-
-					return { success: true, user: response.user };
-				} else {
-					this.setError(response.message || 'Failed to update profile');
-					return { success: false, error: response.message };
-				}
-			} catch (error: any) {
-				const errorMessage = error.response?.data?.message || 'Failed to update profile';
-				this.setError(errorMessage);
-				return { success: false, error: errorMessage };
-			} finally {
-				this.setLoading(false);
-			}
-		},
-
-		/**
-		 * Change user password
-		 */
-		async changePassword(passwordData: ChangePasswordRequest) {
-			this.setLoading(true);
-			this.clearError();
-
-			try {
-				const response: any = await userService.changePassword(passwordData);
-
+				const response = await user.changePassword(data);
+				actions.setUpdating(update, false);
 				toast.success(response.message || 'Password changed successfully');
-
-				if (response.success) {
-					return { success: true };
-				} else {
-					this.setError(response.message || 'Failed to change password');
-					return { success: false, error: response.message };
-				}
+				return response;
 			} catch (error: any) {
-				const errorMessage = error.response?.data?.message || 'Failed to change password';
-				this.setError(errorMessage);
-				return { success: false, error: errorMessage };
-			} finally {
-				this.setLoading(false);
+				actions.setUpdating(update, false);
+				return error;
 			}
 		},
 
-		/**
-		 * Refresh user profile
-		 */
-		async refreshUser() {
-			return this.getUser();
+		async getMyProfile() {
+			actions.setLoading(update, true);
+
+			try {
+				const response: any = await user.getMyProfile();
+				const userData = response.data;
+				this.setProfile(userData);
+				return response;
+			} catch (error: any) {
+				this.setError(error, 'Failed to fetch profile');
+				throw error;
+			}
 		},
 
-		// Helper methods
-		setUser(user: UserProfileResponse | null) {
+		async updateProfile(profileData: UpdateProfileRequest) {
+			actions.setUpdating(update, true);
+
+			try {
+				const response: any = await user.updateProfile(profileData);
+				const updatedUser = response.data;
+
+				this.setProfile(updatedUser);
+				authStore.setUser(updatedUser);
+				toast.success(response.message || 'Profile updated successfully');
+			} catch (error: any) {
+				this.setError(error, 'Failed to update profile');
+				throw error;
+			}
+		},
+
+		setProfile: (profile: Profile | null) => {
 			update((state) => ({
 				...state,
-				user,
-				error: null
+				profile,
+				error: null,
+				isLoading: false,
+				isUpdating: false
 			}));
 		},
 
-		setError(error: string) {
-			update((state) => ({ ...state, error, isLoading: false }));
+		setError: (error: any, fallback: string) => {
+			const message = error.response?.data?.message || fallback;
+			actions.setError(update, error);
+			console.error(message);
 		},
 
-		setLoading(isLoading: boolean) {
-			update((state) => ({ ...state, isLoading }));
+		clearError: () => {
+			actions.clearError(update);
 		},
 
-		clearError() {
-			update((state) => ({ ...state, error: null }));
-		},
-
-		reset() {
-			set(initialState);
+		reset: () => {
+			actions.reset(update, initialState);
 		}
 	};
 }
 
 export const userStore = createUserStore();
-
-// Derived stores
 export const userError = derived(userStore, ($userStore) => $userStore.error);
-export const currentUserProfile = derived(userStore, ($userStore) => $userStore.user);
-export const isUserLoading = derived(userStore, ($userStore) => $userStore.isLoading);
-
-// Convenience exports
-export const resetUser = () => userStore.reset();
-export const clearUserError = () => userStore.clearError();
+export const userProfile = derived(userStore, ($userStore) => $userStore.profile);
+export const isLoading = derived(userStore, ($userStore) => $userStore.isLoading);
+export const isUpdating = derived(userStore, ($userStore) => $userStore.isUpdating);

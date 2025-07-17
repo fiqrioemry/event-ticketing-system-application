@@ -7,19 +7,19 @@ export const createStoreActions = <T extends { id: string }>(
 ) => ({
 	// Loading states
 	setLoading: (update: any, isLoading: boolean) => {
-		update((state: any) => ({ ...state, isLoading }));
+		update((state: any) => ({ ...state, error: null, isLoading }));
 	},
 
 	setCreating: (update: any, isCreating: boolean) => {
-		update((state: any) => ({ ...state, isCreating }));
+		update((state: any) => ({ ...state, error: null, isCreating }));
 	},
 
 	setUpdating: (update: any, isUpdating: boolean) => {
-		update((state: any) => ({ ...state, isUpdating }));
+		update((state: any) => ({ ...state, error: null, isUpdating }));
 	},
 
 	setDeleting: (update: any, isDeleting: boolean) => {
-		update((state: any) => ({ ...state, isDeleting }));
+		update((state: any) => ({ ...state, error: null, isDeleting }));
 	},
 
 	resetLoading: (update: any) => {

@@ -20,3 +20,10 @@ export const sortOptions = [
 	{ value: 'title_asc', label: 'Title A-Z' },
 	{ value: 'title_desc', label: 'Title Z-A' }
 ];
+
+export const statusOptions = [
+	{ value: 'pending', label: 'Pending' },
+	{ value: 'paid', label: 'Paid' },
+	{ value: 'failed', label: 'Failed' },
+	{ value: 'refunded', label: 'Refunded' }
+];

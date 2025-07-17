@@ -23,6 +23,26 @@ export const loginValidationRules: ValidationRules = {
 	}
 };
 
+export const purchaseValidationRules: ValidationRules = {
+	email: {
+		required: true,
+		email: true,
+		message: 'Please enter a valid email address'
+	},
+	phone: {
+		required: true,
+		minLength: 10,
+		maxLength: 14,
+		pattern: /^\+?[1-9]\d{1,14}$/,
+		message: 'Please enter a valid phone number'
+	},
+	Fullname: {
+		required: true,
+		minLength: 3,
+		message: 'Full name must be at least 3 characters'
+	}
+};
+
 // Register Request
 export const registerValidationRules: ValidationRules = {
 	fullname: {
@@ -51,8 +71,6 @@ export const updateUserValidationRules: ValidationRules = {
 		maxLength: 100,
 		message: 'Full name must be between 2-100 characters'
 	}
-	// avatar: handled separately (file upload)
-	// avatarUrl: optional string, no validation needed
 };
 
 // Change Password Request
