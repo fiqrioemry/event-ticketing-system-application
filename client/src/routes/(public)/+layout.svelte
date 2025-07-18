@@ -5,9 +5,11 @@
 	import Header from '$lib/components/layout/Header.svelte';
 
 	export let data;
+	export let children;
+
 	authStore.setUser(data?.user || null);
 </script>
 
 <Header />
-<slot />
+{@render children?.()}
 <Footer />

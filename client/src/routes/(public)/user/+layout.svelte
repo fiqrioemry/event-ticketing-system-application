@@ -5,8 +5,10 @@
 	import * as Sheet from '$lib/components/ui/sheet';
 	import Avatar from '$lib/components/shared/Avatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import { UserCircle, Package, LogOut, Menu } from '@lucide/svelte';
 	import { isAuthenticated, authUser, authStore } from '$lib/stores/auth.store';
-	import { UserCircle, Package, Bell, LogOut, Menu } from '@lucide/svelte';
+
+	const { children } = $props<{ children: any }>();
 
 	if (!$isAuthenticated) {
 		goto('/signin');
@@ -167,7 +169,7 @@
 
 		<!-- Main Content -->
 		<main class="min-h-[600px] flex-1">
-			<slot />
+			{@render children?.()}
 		</main>
 	</div>
 </section>
