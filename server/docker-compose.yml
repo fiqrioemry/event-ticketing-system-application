@@ -19,10 +19,10 @@ services:
       start_period: 15s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.ecommerce.rule=Host(`tiketku.ahmadfiqrioemry.com`)"
-      - "traefik.http.services.ecommerce.loadbalancer.server.port=5004"
-      - "traefik.http.routers.ecommerce.entrypoints=websecure"
-      - "traefik.http.routers.ecommerce.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tiketku.rule=Host(`tiketku-api.ahmadfiqrioemry.com`)"
+      - "traefik.http.services.tiketku.loadbalancer.server.port=5004"
+      - "traefik.http.routers.tiketku.entrypoints=websecure"
+      - "traefik.http.routers.tiketku.tls.certresolver=letsencrypt"
     networks:
       - shared-net
 
