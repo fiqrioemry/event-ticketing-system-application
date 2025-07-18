@@ -9,6 +9,7 @@ import (
 	"github.com/fiqrioemry/event_ticketing_system_app/server/middleware"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/routes"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/seeders"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
@@ -21,7 +22,7 @@ import (
 
 // TICKETING APP SERVER
 // VERSION: 1.0.0
-// DEPLOYMENT: docker-compose
+// DEPLOYMENT: github actions
 // PORT: 5004
 // DESCRIPTION: This is a server for an event ticketing system that handles user registration, event management, and payment processing.
 
@@ -37,7 +38,7 @@ func main() {
 		LogErrorResponses:   true,
 	})
 
-	// seeders.ResetDatabase(db)
+	seeders.ResetDatabase(db)
 
 	// ========== initialisasi layer ============
 	repo := repositories.InitRepositories(db)

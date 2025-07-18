@@ -52,7 +52,10 @@ func (s *userService) UpdateUserDetail(userID string, req *dto.UpdateProfileRequ
 	}
 
 	user.Fullname = req.Fullname
-	user.Avatar = req.AvatarURL
+
+	if req.AvatarURL != "" {
+		user.Avatar = req.AvatarURL
+	}
 
 	if err := s.user.UpdateUser(user); err != nil {
 		return nil, response.NewInternalServerError("failed to update user profile", err)

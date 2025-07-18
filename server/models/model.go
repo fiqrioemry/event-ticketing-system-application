@@ -74,7 +74,7 @@ type Order struct {
 	Email      string    `gorm:"type:varchar(100);not null"`
 	Phone      string    `gorm:"type:varchar(20);not null"`
 	TotalPrice float64   `gorm:"type:decimal(12,2);not null"`
-	PaymentURL string    `gorm:"type:varchar(255);default:''"`
+	PaymentURL string    `gorm:"type:text"`
 	Status     string    `gorm:"type:enum('pending','paid','failed','cancelled','refunded');default:'pending'"`
 	CreatedAt  time.Time `gorm:"autoCreateTime"`
 	UpdatedAt  time.Time `gorm:"autoUpdateTime"`

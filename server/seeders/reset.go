@@ -46,5 +46,6 @@ func ResetDatabase(db *gorm.DB) {
 
 	log.Println("seeding dummy data...")
 	SeedAll(db)
+	SeedAdditionalEvents(db)
 	log.Println("seeding completed successfully.")
 }
