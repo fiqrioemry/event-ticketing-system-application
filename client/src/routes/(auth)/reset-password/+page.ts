@@ -1,6 +1,8 @@
 import * as auth from '$lib/services/auth.service';
 import { redirect } from '@sveltejs/kit';
 
+export const prerender = false;
+
 export async function load({ url }) {
 	const token = url.searchParams.get('token') || 'xaxaxaxa';
 	try {
@@ -15,4 +17,3 @@ export async function load({ url }) {
 		redirect(404, 'page not found');
 	}
 }
-export const prerender = false;

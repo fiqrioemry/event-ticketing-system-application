@@ -9,5 +9,7 @@ export async function load({ cookies }) {
 	}
 }
 
-export const prerender = false;
-export const ssr = true;
+// export const prerender = false;
+// export const ssr = true;
+
+export const ssr = false;

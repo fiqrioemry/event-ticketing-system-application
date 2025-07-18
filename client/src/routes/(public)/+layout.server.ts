@@ -33,3 +33,5 @@ export async function load({ cookies, fetch }: any) {
 		throw new Error('Failed to refresh token: ');
 	}
 }
+
+export const ssr = false;

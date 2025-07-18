@@ -1,6 +1,8 @@
 // routes/events/+page.ts
 import * as eventService from '$lib/services/event.service';
 
+export const prerender = false;
+
 export async function load({ params }) {
 	const eventId = params.id;
 
