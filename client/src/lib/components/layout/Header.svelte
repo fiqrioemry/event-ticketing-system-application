@@ -2,31 +2,17 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { User, Menu, X } from '@lucide/svelte';
-	import UserMenu from '$lib/components/shared/UserMenu.svelte';
 	import { authUser } from '$lib/stores/auth.store';
+	import UserMenu from '$lib/components/shared/UserMenu.svelte';
 	import AppLogo from '$lib/components/shared/AppLogo.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 
 	let mobileMenuOpen = $state(false);
-	let userDropdownOpen = $state(false);
 
 	function toggleMobileMenu() {
 		mobileMenuOpen = !mobileMenuOpen;
 	}
-
-	// Close dropdown when clicking outside
-	function handleClickOutside(event: MouseEvent) {
-		const target = event.target as HTMLElement;
-		const dropdown = document.getElementById('user-dropdown');
-		const trigger = document.getElementById('user-dropdown-trigger');
-
-		if (dropdown && trigger && !dropdown.contains(target) && !trigger.contains(target)) {
-			userDropdownOpen = false;
-		}
-	}
 </script>
-
-<svelte:window on:click={handleClickOutside} />
 
 <header class="sticky top-0 z-50 border-b border-blue-100 bg-white/95 shadow-sm backdrop-blur-md">
 	<div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">

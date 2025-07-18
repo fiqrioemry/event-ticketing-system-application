@@ -5,13 +5,19 @@ import type {
 	ForgotPasswordRequest,
 	ResetPasswordRequest
 } from '$lib/types/api';
-import { publicInstance, authInstance } from '$lib/services/client';
+import { publicInstance } from '$lib/services/client';
+import { api } from '$lib/api/client';
 
 // POST /api/auth/login
-export const login = async (credentials: LoginRequest) => {
+// export const login = async (credentials: LoginRequest) => {
+// 	const res = await publicInstance.post('/auth/login', credentials);
+// 	return res.data;
+// };
+
+export async function login(credentials: any) {
 	const res = await publicInstance.post('/auth/login', credentials);
 	return res.data;
-};
+}
 
 // POST /api/auth/register
 export const register = async (userData: RegisterRequest) => {
@@ -21,7 +27,7 @@ export const register = async (userData: RegisterRequest) => {
 
 // POST /api/auth/logout
 export const logout = async () => {
-	const res = await authInstance.post('/auth/logout');
+	const res = await publicInstance.post('/auth/logout');
 	return res.data;
 };
 

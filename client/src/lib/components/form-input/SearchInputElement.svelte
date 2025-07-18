@@ -12,9 +12,11 @@
 	export let placeholder: string = 'Search...';
 	export let onSearch: (value: string) => void = () => {};
 	export let onKeyDown: (event: KeyboardEvent) => void = () => {};
+	export let onClear: (value: string) => void = () => {}; // ← New prop untuk clear action
 
 	// State
 	let debounceTimer: number | null = null;
+	let previousValue = value;
 
 	// Size classes
 	const sizeClasses = {
@@ -28,6 +30,12 @@
 		md: 'h-5 w-5',
 		lg: 'h-6 w-6'
 	};
+
+	// Watch for external value changes (dari parent)
+	$: if (value !== previousValue) {
+		previousValue = value;
+		// Jika value di-set dari luar (misal reset), jangan trigger onSearch
+	}
 
 	// Debounced search function
 	function debouncedSearch(searchTerm: string) {
@@ -43,14 +51,23 @@
 	// Handle input
 	function handleInput(event: Event) {
 		const input = event.target as HTMLInputElement;
-		value = input.value.trim();
-		debouncedSearch(value);
+		const newValue = input.value;
+		value = newValue;
+		previousValue = newValue;
+		debouncedSearch(newValue);
 	}
 
-	// Handle clear
+	// Handle clear - use separate callback
 	function handleClear() {
 		value = '';
-		onSearch('');
+		previousValue = '';
+
+		// Use onClear if provided, otherwise fallback to onSearch
+		if (onClear && onClear !== (() => {})) {
+			onClear(value);
+		} else {
+			onSearch(value);
+		}
 	}
 
 	// Cleanup
@@ -80,12 +97,12 @@
 			on:input={handleInput}
 			on:keydown={onKeyDown}
 			class="
-				h-12 w-full rounded-md border border-gray-300 pl-10
-				{sizeClasses[size]}
-				{showClearButton && value ? 'pr-10' : ''}
-				focus:ring-2 focus:ring-indigo-500 focus:outline-none
-				disabled:cursor-not-allowed disabled:opacity-50
-			"
+        h-12 w-full rounded-md border border-gray-300 pl-10
+        {sizeClasses[size]}
+        {showClearButton && value ? 'pr-10' : ''}
+        focus:ring-2 focus:ring-indigo-500 focus:outline-none
+        disabled:cursor-not-allowed disabled:opacity-50
+      "
 		/>
 
 		{#if showClearButton && value && !disabled}

@@ -7,7 +7,9 @@ declare global {
 			user: UserResponse | null;
 			safeGetSession?: () => Promise<{
 				user: UserResponse | null;
+				authenticated: boolean;
 			}>;
+			authenticated: boolean;
 		}
 	}
 }

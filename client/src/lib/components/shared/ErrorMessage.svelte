@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
-	export let message: string | null = '';
+	export let message: any;
 	export let onclearError: () => void = () => {};
 </script>
 

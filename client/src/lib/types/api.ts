@@ -96,9 +96,9 @@ export interface ForgotPasswordRequest {
 }
 
 export interface ResetPasswordRequest {
-	Token: string;
-	NewPassword: string;
-	ConfirmPassword: string;
+	token: string;
+	newPassword: string;
+	confirmPassword: string;
 }
 
 export interface ForgotPasswordResponse {

@@ -33,14 +33,11 @@ function createAuthStore() {
 
 			try {
 				const response = await auth.login(credentials);
-
 				this.setUser(response.data);
 				toast.success(response.message || 'Login successful');
 				goto('/user/profile');
-				return response;
 			} catch (error: any) {
 				this.setError(error, 'Login failed');
-				throw error;
 			}
 		},
 
@@ -74,13 +71,12 @@ function createAuthStore() {
 			this.setLoading(true);
 			try {
 				const response = await auth.verifyOTP(otpRequest);
-
 				this.setUser(response.data);
 				toast.success(response.message || 'Registration successful');
 				goto('/user/profile');
 			} catch (error: any) {
 				this.setError(error, 'Failed to verify OTP');
-				throw error;
+				console.error(error);
 			}
 		},
 		async logout(redirectTo: string = '/signin') {
@@ -106,20 +102,6 @@ function createAuthStore() {
 				return response;
 			} catch (error: any) {
 				this.setError(error, 'Failed to send reset link');
-				toast.error('Failed to send reset link');
-				throw error;
-			}
-		},
-
-		async validateResetToken(token: string) {
-			this.setLoading(true);
-
-			try {
-				const response = await auth.validateResetToken(token);
-				this.setLoading(true);
-				return response;
-			} catch (error: any) {
-				this.setError(error, 'Invalid or expired reset token');
 				throw error;
 			}
 		},
@@ -132,7 +114,6 @@ function createAuthStore() {
 
 				this.setUser(response.data);
 				toast.success(response.message || 'Password reset successful');
-				goto('/user/profile');
 				return response;
 			} catch (error: any) {
 				this.setError(error, 'Failed to reset password');
@@ -157,30 +138,6 @@ function createAuthStore() {
 			return auth.googleOAuthRedirect();
 		},
 
-		async checkAuth() {
-			this.setLoading(true);
-
-			try {
-				const response = await auth.refreshToken();
-				this.setUser(response.data);
-				return response;
-			} catch (error: any) {
-				this.reset();
-				throw error;
-			}
-		},
-
-		async refreshSession() {
-			try {
-				const response = await auth.refreshToken();
-				this.setUser(response.data);
-				return response;
-			} catch (error: any) {
-				this.reset();
-				throw error;
-			}
-		},
-
 		setUser: (user: User | null) => {
 			update((state: AuthState) => ({
 				...state,
@@ -193,7 +150,7 @@ function createAuthStore() {
 
 		setError: (error: any, fallback: string) => {
 			const message = error.response?.data?.message || fallback;
-			actions.setError(update, error);
+			actions.setError(update, message);
 			console.error(message);
 		},
 

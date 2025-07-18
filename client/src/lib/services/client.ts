@@ -1,7 +1,7 @@
 // src/lib/api/client.ts
 import axios from 'axios';
-import { goto } from '$app/navigation';
 import { authStore } from '$lib/stores/auth.store';
+import { browser } from '$app/environment'; // Import ini
 
 // Public instance - untuk endpoint tanpa autentikasi
 export const publicInstance = axios.create({
@@ -35,20 +35,19 @@ authInstance.interceptors.response.use(
 			originalRequest._retry = true;
 
 			try {
-				// try refresh using publicInstance
-				// Refresh token menggunakan publicInstance
 				const refreshResponse = await publicInstance.post('/auth/refresh-token');
 
 				if (refreshResponse.data.success) {
-					// update user state from store
 					authStore.setUser(refreshResponse.data.data);
-					// Retry original request
 					return authInstance(originalRequest);
 				}
 			} catch (refreshError) {
-				// if refresh failed then logout and redirect
 				authStore.reset();
-				goto('/signin');
+
+				if (browser) {
+					window.location.href = '/signin';
+				}
+
 				return Promise.reject(refreshError);
 			}
 		}
