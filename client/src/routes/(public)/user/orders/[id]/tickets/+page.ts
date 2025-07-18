@@ -1,4 +1,7 @@
+// src/routes/(public)/user/orders/[id]/tickets/+page.ts
 import * as order from '$lib/services/order.service';
+
+export const prerender = false;
 
 export async function load({ params }: { params: { id: string } }) {
 	const orderId = params.id;

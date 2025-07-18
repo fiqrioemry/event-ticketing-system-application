@@ -1,6 +1,4 @@
 import qs from 'qs';
-import { api } from '$lib/api/client';
-import type { ApiResponse } from '$lib/types/api';
 import { authInstance } from '$lib/services/client';
 import type { OrderQueryParams, CreateOrderRequest } from '$lib/types/api';
 

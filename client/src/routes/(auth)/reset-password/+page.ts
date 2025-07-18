@@ -15,3 +15,4 @@ export async function load({ url }) {
 		redirect(404, 'page not found');
 	}
 }
+export const prerender = false;

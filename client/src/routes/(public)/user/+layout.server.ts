@@ -1,3 +1,4 @@
+// src/routes/(public)/user/+layout.server.ts
 import { redirect } from '@sveltejs/kit';
 
 export async function load({ cookies }) {
@@ -8,5 +9,5 @@ export async function load({ cookies }) {
 	}
 }
 
-export let prerender = true;
-export let ssr = false;
+export const prerender = false;
+export const ssr = true;
