@@ -1,26 +1,15 @@
-// import adapter from '@sveltejs/adapter-static';
-
-// const config = {
-// 	kit: {
-// 		adapter: adapter({
-// 			pages: 'build',
-// 			assets: 'build',
-// 			fallback: 'app.html',    // Custom fallback
-// 			precompress: false,
-// 			strict: false
-// 		})
-// 	}
-// };
-
-// export default config;
-
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import adapter from '@sveltejs/adapter-netlify';
-import { vitePreprocess } from '@sveltejs/kit/vite';
 
+/** @type {import('@sveltejs/kit').Config} */
 const config = {
 	preprocess: vitePreprocess(),
+
 	kit: {
-		adapter: adapter()
+		adapter: adapter({
+			edge: false,
+			split: false
+		})
 	}
 };
 

@@ -1,12 +1,14 @@
-[build]
-base = "client"
-command = "npm run build"
-publish = ".svelte-kit/output"
 
-[build.environment]
-NODE_VERSION = "18"
+[build]
+  command = "npm run build"
+  publish = ".netlify/functions"
+
+# Atau jika output ke build/
+[build]
+  command = "npm run build"  
+  publish = "build"
 
 [[redirects]]
-from = "/*"
-to = "/index.html"
-status = 200
+  from = "/*"
+  to = "/index.html"
+  status = 200
