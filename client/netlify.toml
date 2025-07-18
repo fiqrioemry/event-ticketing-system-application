@@ -1,29 +1,12 @@
-# netlify.toml (letakkan di root repository)
 [build]
-  base = "client"
-  command = "npm run build"
-  publish = "client/build"
+base = "client"
+command = "npm run build"
+publish = ".svelte-kit/output"
 
-# Environment variables for build
 [build.environment]
-  NODE_VERSION = "18"
+NODE_VERSION = "18"
 
-# SPA routing - semua routes ke index.html
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-# Security headers
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-
-# Cache headers untuk static assets
-[[headers]]
-  for = "/_app/immutable/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+from = "/*"
+to = "/index.html"
+status = 200
