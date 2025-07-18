@@ -9,7 +9,7 @@
 <div
 	class="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-100/50"
 >
-	<!-- Event Image (if available) -->
+	<!-- Event Image  -->
 	{#if data.image}
 		<div class="aspect-video overflow-hidden">
 			<img
@@ -23,7 +23,7 @@
 	<div class="p-6">
 		<!-- Event Title -->
 		<h3
-			class="mb-3 line-clamp-2 text-xl font-semibold text-gray-800 transition-colors group-hover:text-blue-600"
+			class="mb-3 line-clamp-1 text-xl font-semibold text-gray-800 transition-colors group-hover:text-blue-600"
 		>
 			{data.title}
 		</h3>

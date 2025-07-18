@@ -10,7 +10,7 @@ export async function load({ url }) {
 		endDate: url.searchParams.get('endDate') || undefined,
 		location: url.searchParams.get('location') || undefined,
 		page: parseInt(url.searchParams.get('page') || '1'),
-		limit: parseInt(url.searchParams.get('limit') || '10')
+		limit: parseInt(url.searchParams.get('limit') || '5')
 	};
 	const response = await eventService.getAllEvents(params);
 

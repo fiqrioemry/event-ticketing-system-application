@@ -153,7 +153,7 @@
 			{#if showFilters}
 				<div class="pt-6">
 					<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-						<!-- Start Date Filter - FIXED: Hanya bind:value -->
+						<!-- Start Date Filter -->
 						<InputDateElement
 							label="Start Date"
 							id="start-date-filter"
@@ -161,7 +161,7 @@
 							placeholder="Select start date"
 						/>
 
-						<!-- End Date Filter - FIXED: Hanya bind:value -->
+						<!-- End Date Filter  -->
 						<InputDateElement
 							label="End Date"
 							isEndDate={true}
@@ -183,7 +183,7 @@
 						/>
 					</div>
 
-					<!-- Active Filters Display - BONUS -->
+					<!-- Active Filters Display -->
 					{#if hasActiveFilters}
 						<div class="mt-4 mb-4">
 							<h4 class="mb-2 text-sm font-medium text-gray-700">Active Filters:</h4>
