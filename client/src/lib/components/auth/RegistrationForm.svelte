@@ -127,12 +127,7 @@
 			otp: formData.otp.trim()
 		};
 
-		try {
-			await authStore.verifyOtp(verifyRequest);
-			// Success is handled in the store (redirect to profile)
-		} catch (error) {
-			console.error('OTP verification failed:', error);
-		}
+		await authStore.verifyOtp(verifyRequest);
 	}
 
 	async function handleSubmit(event: Event) {
@@ -227,7 +222,7 @@
 
 		<form onsubmit={handleSubmit} class="space-y-4">
 			{#if $authError}
-				<ErrorMessage message={$authError.message} onclearError={authStore.clearError} />
+				<ErrorMessage message={$authError} onclearError={authStore.clearError} />
 			{/if}
 
 			{#if isRegistrationStep}
