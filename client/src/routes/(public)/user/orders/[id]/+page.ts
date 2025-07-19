@@ -1,8 +1,6 @@
 // src/routes/(public)/user/+layout.server.ts
 import * as order from '$lib/services/order.service';
 
-export const prerender = false;
-
 export async function load({ params }) {
 	const orderId = params.id;
 	try {
@@ -14,3 +12,6 @@ export async function load({ params }) {
 		throw new Error('Failed to fetch order detail');
 	}
 }
+
+export const prerender = false;
+export const ssr = false;

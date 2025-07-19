@@ -1,8 +1,6 @@
 // src/routes/(public)/user/orders/[id]/tickets/+page.ts
 import * as order from '$lib/services/order.service';
 
-export const prerender = false;
-
 export async function load({ params }: { params: { id: string } }) {
 	const orderId = params.id;
 	try {
@@ -15,3 +13,6 @@ export async function load({ params }: { params: { id: string } }) {
 		throw new Error('Failed to fetch user tickets');
 	}
 }
+
+export const prerender = false;
+export const ssr = false;

@@ -7,7 +7,6 @@
 
 	let isLoading = true;
 
-	// Simulate loading delay (authentication already handled on layout.server)
 	onMount(() => {
 		setTimeout(() => {
 			isLoading = false;

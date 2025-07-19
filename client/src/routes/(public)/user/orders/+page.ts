@@ -1,8 +1,6 @@
 import type { OrderQueryParams } from '$lib/types/api';
 import * as order from '$lib/services/order.service';
 
-export const prerender = false;
-
 export async function load({ url }) {
 	const params: OrderQueryParams = {
 		search: url.searchParams.get('search') || undefined,
@@ -27,3 +25,6 @@ export async function load({ url }) {
 		};
 	}
 }
+
+export const prerender = false;
+export const ssr = false;
