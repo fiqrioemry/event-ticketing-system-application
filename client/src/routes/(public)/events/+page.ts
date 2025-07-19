@@ -3,8 +3,6 @@ import { pagination } from '$lib/utils/state.js';
 import type { EventQueryParams } from '$lib/types/api';
 import * as eventService from '$lib/services/event.service';
 
-export const prerender = false;
-
 export async function load({ url }) {
 	const params: EventQueryParams = {
 		search: url.searchParams.get('search') || undefined,

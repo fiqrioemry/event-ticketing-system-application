@@ -6,13 +6,9 @@
 	import Avatar from '$lib/components/shared/Avatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { UserCircle, Package, LogOut, Menu } from '@lucide/svelte';
-	import { isAuthenticated, authUser, authStore } from '$lib/stores/auth.store';
+	import { authUser, authStore } from '$lib/stores/auth.store';
 
 	const { children } = $props<{ children: any }>();
-
-	if (!$isAuthenticated) {
-		goto('/signin');
-	}
 
 	const navItems = [
 		{

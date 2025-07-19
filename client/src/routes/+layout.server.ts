@@ -29,7 +29,7 @@ export async function load({ cookies, fetch, url }) {
 		}
 
 		const userData = await response.json();
-		return { user: userData.data || userData.user || null };
+		return { user: userData.data };
 	} catch (error) {
 		return { user: null };
 	}

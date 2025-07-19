@@ -14,5 +14,4 @@ export async function load({ params }: { params: { id: string } }) {
 	}
 }
 
-export const prerender = false;
 export const ssr = true;

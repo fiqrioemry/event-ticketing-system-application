@@ -5,13 +5,9 @@ export async function load({ params }) {
 	const orderId = params.id;
 	try {
 		const response = await order.getOrderDetail(orderId);
-		return {
-			orderDetail: response.data || []
-		};
-	} catch (error) {
+		return { orderDetail: response.data || [] };
+	} catch {
 		throw new Error('Failed to fetch order detail');
 	}
 }
-
-export const prerender = false;
 export const ssr = true;
