@@ -117,7 +117,7 @@ func DecodeRefreshToken(tokenString string) (string, error) {
 
 func SetRefreshTokenCookie(c *gin.Context, refreshToken string) {
 	domain := config.AppConfig.CookieDomain
-	c.SetCookie("refreshToken", refreshToken, 7*24*3600, "/", domain, false, false)
+	c.SetCookie("refreshToken", refreshToken, 7*24*3600, "/", domain, true, true)
 }
 
 func ClearRefreshTokenCookie(c *gin.Context) {
@@ -127,14 +127,14 @@ func ClearRefreshTokenCookie(c *gin.Context) {
 		-1,
 		"/",
 		"",
-		false,
-		false,
+		true,
+		true,
 	)
 }
 
 func SetAccessTokenCookie(c *gin.Context, accessToken string) {
 	domain := config.AppConfig.CookieDomain
-	c.SetCookie("accessToken", accessToken, 3600, "/", domain, false, false)
+	c.SetCookie("accessToken", accessToken, 3600, "/", domain, true, true)
 }
 
 func ClearAccessTokenCookie(c *gin.Context) {
@@ -144,7 +144,7 @@ func ClearAccessTokenCookie(c *gin.Context) {
 		-1,
 		"/",
 		"",
-		false,
-		false,
+		true,
+		true,
 	)
 }
