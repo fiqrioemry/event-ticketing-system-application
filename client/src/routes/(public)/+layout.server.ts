@@ -4,6 +4,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5004/api
 
 export async function load({ cookies, fetch }) {
 	const refreshToken = cookies.get('refreshToken');
+	console.log('Refresh Token:', refreshToken);
 
 	// No refresh token = not authenticated
 	if (!refreshToken) {
@@ -20,7 +21,7 @@ export async function load({ cookies, fetch }) {
 			headers: {
 				'X-API-KEY': API_KEY,
 				'Content-Type': 'application/json',
-				Cookie: `refreshToken=${refreshToken}` // ✅ Explicit cookie passing
+				Cookie: `refreshToken=${refreshToken}`
 			}
 		});
 
@@ -28,11 +29,11 @@ export async function load({ cookies, fetch }) {
 			// ✅ Clear invalid token
 			cookies.delete('refreshToken', {
 				path: '/',
-				domain: '' // ✅ Match domain from set
+				domain: 'https://tiketku.ahmadfiqrioemry.com'
 			});
 			cookies.delete('accessToken', {
 				path: '/',
-				domain: ''
+				domain: 'https://tiketku.ahmadfiqrioemry.com'
 			});
 
 			return {
