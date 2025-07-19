@@ -14,11 +14,11 @@ export async function load({ cookies, fetch, request }) {
 	console.log('🌐 Request headers:', BASE_URL);
 
 	// No refresh token = not authenticated
-	if (!refreshToken) {
-		return {
-			user: null
-		};
-	}
+	// if (!refreshToken) {
+	// 	return {
+	// 		user: null
+	// 	};
+	// }
 
 	// Try to refresh token and get user data
 	try {
@@ -36,11 +36,11 @@ export async function load({ cookies, fetch, request }) {
 			// ✅ Clear invalid token
 			cookies.delete('refreshToken', {
 				path: '/',
-				domain: 'https://tiketku.ahmadfiqrioemry.com'
+				domain: 'tiketku.ahmadfiqrioemry.com'
 			});
 			cookies.delete('accessToken', {
 				path: '/',
-				domain: 'https://tiketku.ahmadfiqrioemry.com'
+				domain: 'tiketku.ahmadfiqrioemry.com'
 			});
 
 			return {
@@ -55,8 +55,14 @@ export async function load({ cookies, fetch, request }) {
 	} catch (error) {
 		console.error('Token refresh failed:', error);
 
-		cookies.delete('refreshToken', { path: '/' });
-		cookies.delete('accessToken', { path: '/' });
+		cookies.delete('refreshToken', {
+			path: '/',
+			domain: 'tiketku.ahmadfiqrioemry.com'
+		});
+		cookies.delete('accessToken', {
+			path: '/',
+			domain: 'tiketku.ahmadfiqrioemry.com'
+		});
 
 		return {
 			user: null
