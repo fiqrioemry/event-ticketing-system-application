@@ -1,3 +1,4 @@
+// lib/stores/auth.store.ts
 import type {
 	User,
 	AuthState,
@@ -13,6 +14,7 @@ import { goto } from '$app/navigation';
 import { writable, derived } from 'svelte/store';
 import * as auth from '$lib/services/auth.service';
 import { createStoreActions } from '$lib/utils/store';
+import { browser } from '$app/environment';
 
 const initialAuthState: AuthState = {
 	error: null,
@@ -35,7 +37,10 @@ function createAuthStore() {
 				const response = await auth.login(credentials);
 				this.setUser(response.data);
 				toast.success(response.message || 'Login successful');
-				goto('/user/profile');
+
+				if (browser) {
+					window.location.href = '/user/profile';
+				}
 			} catch (error: any) {
 				this.setError(error, 'Login failed');
 			}
@@ -73,12 +78,16 @@ function createAuthStore() {
 				const response = await auth.verifyOTP(otpRequest);
 				this.setUser(response.data);
 				toast.success(response.message || 'Registration successful');
-				goto('/user/profile');
+
+				if (browser) {
+					window.location.href = '/user/profile';
+				}
 			} catch (error: any) {
 				this.setError(error, 'Failed to verify OTP');
 				console.error(error);
 			}
 		},
+
 		async logout(redirectTo: string = '/signin') {
 			this.setLoading(true);
 			try {
@@ -88,7 +97,10 @@ function createAuthStore() {
 				console.error(error.response?.data?.message || 'Logout failed');
 			} finally {
 				this.setUser(null);
-				goto(redirectTo);
+
+				if (browser) {
+					window.location.href = redirectTo;
+				}
 			}
 		},
 
@@ -111,9 +123,13 @@ function createAuthStore() {
 
 			try {
 				const response = await auth.resetPassword(resetPasswordData);
-
 				this.setUser(response.data);
 				toast.success(response.message || 'Password reset successful');
+
+				if (browser) {
+					window.location.href = '/user/profile';
+				}
+
 				return response;
 			} catch (error: any) {
 				this.setError(error, 'Failed to reset password');
@@ -128,7 +144,10 @@ function createAuthStore() {
 				const response = await auth.googleOAuthCallback(oauthData.code, oauthData.state);
 				this.setUser(response.data);
 				toast.success(response.message || 'Google login successful');
-				goto('/user/profile');
+
+				if (browser) {
+					window.location.href = '/user/profile';
+				}
 			} catch (error: any) {
 				this.setError(error, 'Google login failed');
 			}

@@ -1,15 +1,16 @@
 // src/routes/(public)/user/+layout.server.ts
 import { redirect } from '@sveltejs/kit';
 
-export async function load({ cookies }) {
-	const refreshToken = cookies.get('refreshToken');
+export async function load({ cookies, parent }) {
+	const { user } = await parent();
 
-	if (!refreshToken) {
+	if (!user) {
 		redirect(302, '/signin');
 	}
+
+	return {
+		user
+	};
 }
 
-// export const prerender = false;
-// export const ssr = true;
-
-export const ssr = false;
+export const ssr = true;
