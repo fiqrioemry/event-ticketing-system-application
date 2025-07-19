@@ -1,3 +1,5 @@
+import { fa } from 'zod/v4/locales';
+
 // src/routes/+layout.server.ts
 const API_KEY = import.meta.env.VITE_API_KEY || 'your_api_key';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5004/api/v1';
@@ -73,6 +75,7 @@ export async function load({ cookies, fetch, request }) {
 	}
 }
 
+export const prerender = true;
 export const ssr = true;
 
 // // src/routes/+layout.server.ts
