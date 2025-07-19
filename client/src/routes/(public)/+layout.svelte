@@ -5,7 +5,7 @@
 	import Header from '$lib/components/layout/Header.svelte';
 
 	const { children, data } = $props<{ children: any; data: any }>();
-	console.log('Refresh Token:', data);
+
 	$effect(() => {
 		authStore.setUser(data?.user || null);
 	});

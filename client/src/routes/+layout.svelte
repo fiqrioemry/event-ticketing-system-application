@@ -1,3 +1,4 @@
+<!-- src/routes/+layout.svelte -->
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
@@ -9,18 +10,10 @@
 	let isLoading = true;
 
 	// Simulate loading delay (authentication already handled on layout.server)
-	onMount(async () => {
-		try {
-			// Fetch user data to ensure authStore is populated
-			const response = await authService.refreshToken();
-			authStore.setUser(response?.data || null);
-		} catch (error) {
-			authStore.setUser(null);
-		} finally {
-			setTimeout(() => {
-				isLoading = false;
-			}, 100); //
-		}
+	onMount(() => {
+		setTimeout(() => {
+			isLoading = false;
+		}, 150); //
 	});
 </script>
 
