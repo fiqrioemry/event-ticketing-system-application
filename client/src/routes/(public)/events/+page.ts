@@ -6,7 +6,6 @@ import * as eventService from '$lib/services/event.service';
 export const prerender = false;
 
 export async function load({ url }) {
-	console.log('🍪 GETTING PAGE URL NOW:', url);
 	const params: EventQueryParams = {
 		search: url.searchParams.get('search') || undefined,
 		startDate: url.searchParams.get('startDate') || undefined,
