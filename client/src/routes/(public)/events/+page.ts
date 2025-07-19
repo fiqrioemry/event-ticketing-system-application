@@ -14,15 +14,20 @@ export async function load({ url }) {
 		page: parseInt(url.searchParams.get('page') || '1'),
 		limit: parseInt(url.searchParams.get('limit') || '5')
 	};
-	const response = await eventService.getAllEvents(params);
+	try {
+		const response = await eventService.getAllEvents(params);
 
-	if (!response.success) {
-		throw new Error(`Failed to load events: ${response.message}`);
+		return {
+			events: response.data || [],
+			pagination: response.meta?.pagination || pagination,
+			params
+		};
+	} catch (error) {
+		console.error('Error loading events:', error);
+		return {
+			events: [],
+			pagination,
+			params
+		};
 	}
-
-	return {
-		events: response.data || [],
-		pagination: response.meta?.pagination || pagination,
-		params
-	};
 }
