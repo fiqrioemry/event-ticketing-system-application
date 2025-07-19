@@ -22,15 +22,18 @@ export async function load({ cookies, fetch, request }) {
 
 	// Try to refresh token and get user data
 	try {
-		const response = await fetch(`https://tiketku-api.ahmadfiqrioemry.com/auth/refresh-token`, {
-			method: 'POST',
-			credentials: 'include',
-			headers: {
-				'X-API-KEY': API_KEY,
-				'Content-Type': 'application/json',
-				Cookie: `refreshToken=${refreshToken}`
+		const response = await fetch(
+			`https://tiketku-api.ahmadfiqrioemry.com/api/v1/auth/refresh-token`,
+			{
+				method: 'POST',
+				credentials: 'include',
+				headers: {
+					'X-API-KEY': API_KEY,
+					'Content-Type': 'application/json',
+					Cookie: `refreshToken=${refreshToken}`
+				}
 			}
-		});
+		);
 
 		if (!response.ok) {
 			// ✅ Clear invalid token
