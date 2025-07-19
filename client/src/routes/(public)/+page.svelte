@@ -1,3 +1,4 @@
+<!-- src/routes/(public)/+page.svelte -->
 <script lang="ts">
 	import CtaContent from '$lib/components/home/CTAContent.svelte';
 	import HeroContent from '$lib/components/home/HeroContent.svelte';

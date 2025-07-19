@@ -38,3 +38,5 @@ export async function load({ cookies, fetch, url }) {
 		return { user: null };
 	}
 }
+
+export let ssr = true;
