@@ -2,9 +2,16 @@
 const API_KEY = import.meta.env.VITE_API_KEY || 'your_api_key';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5004/api/v1';
 
-export async function load({ cookies, fetch }) {
+export async function load({ cookies, fetch, request }) {
 	const refreshToken = cookies.get('refreshToken');
 	console.log('Refresh Token:', refreshToken);
+
+	// ✅ Debug: Log all cookies
+	console.log('🍪 All server cookies:', cookies.getAll());
+	console.log('🍪 RefreshToken from server:', refreshToken);
+	console.log('🌐 Request URL:', request.url);
+	console.log('🌐 Request headers:', request.headers.get('cookie'));
+	console.log('🌐 Request headers:', BASE_URL);
 
 	// No refresh token = not authenticated
 	if (!refreshToken) {
@@ -15,7 +22,7 @@ export async function load({ cookies, fetch }) {
 
 	// Try to refresh token and get user data
 	try {
-		const response = await fetch(`${BASE_URL}/auth/refresh-token`, {
+		const response = await fetch(`https://tiketku-api.ahmadfiqrioemry.com/auth/refresh-token`, {
 			method: 'POST',
 			credentials: 'include',
 			headers: {
