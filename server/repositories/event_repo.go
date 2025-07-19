@@ -59,7 +59,7 @@ func (r *eventRepository) GetAllEvents(params dto.EventQueryParams) ([]models.Ev
 
 	if params.Q != "" {
 		like := "%" + params.Q + "%"
-		db = db.Where("title LIKE ?", like)
+		db = db.Where("title LIKE ? OR description LIKE ?", like, like)
 	}
 
 	if params.Location != "" && params.Location != "all" {

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/fiqrioemry/event_ticketing_system_app/server/config"
@@ -57,7 +58,6 @@ func GenerateRefreshToken(userID string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
 	secretKey := []byte(config.AppConfig.RefreshTokenSecret)
 
 	tokenString, err := token.SignedString(secretKey)
@@ -74,7 +74,6 @@ func DecodeAccessToken(tokenString string) (*Claims, error) {
 	}
 
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
-
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
@@ -98,7 +97,6 @@ func DecodeRefreshToken(tokenString string) (string, error) {
 	}
 
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (any, error) {
-
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
@@ -108,6 +106,7 @@ func DecodeRefreshToken(tokenString string) (string, error) {
 	if err != nil {
 		return "", errors.New("failed to parse refresh token: " + err.Error())
 	}
+
 	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
 		return claims.Subject, nil
 	}
@@ -117,34 +116,48 @@ func DecodeRefreshToken(tokenString string) (string, error) {
 
 func SetRefreshTokenCookie(c *gin.Context, refreshToken string) {
 	domain := config.AppConfig.CookieDomain
-	c.SetCookie("refreshToken", refreshToken, 7*24*3600, "/", domain, true, true)
-}
 
-func ClearRefreshTokenCookie(c *gin.Context) {
-	c.SetCookie(
-		"refreshToken",
-		"",
-		-1,
-		"/",
-		"",
-		true,
-		true,
-	)
+	if domain == "localhost" {
+		c.SetSameSite(http.SameSiteLaxMode) // Gunakan Lax untuk localhost
+		c.SetCookie("refreshToken", refreshToken, 7*24*3600, "/", domain, false, true)
+	} else {
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("refreshToken", refreshToken, 7*24*3600, "/", domain, true, true)
+	}
 }
 
 func SetAccessTokenCookie(c *gin.Context, accessToken string) {
 	domain := config.AppConfig.CookieDomain
-	c.SetCookie("accessToken", accessToken, 3600, "/", domain, true, true)
+
+	if domain == "localhost" {
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("accessToken", accessToken, 3600, "/", domain, false, true)
+	} else {
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("accessToken", accessToken, 3600, "/", domain, true, true)
+	}
+}
+
+func ClearRefreshTokenCookie(c *gin.Context) {
+	domain := config.AppConfig.CookieDomain
+
+	if domain == "localhost" {
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("refreshToken", "", -1, "/", domain, false, true)
+	} else {
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("refreshToken", "", -1, "/", domain, true, true)
+	}
 }
 
 func ClearAccessTokenCookie(c *gin.Context) {
-	c.SetCookie(
-		"accessToken",
-		"",
-		-1,
-		"/",
-		"",
-		true,
-		true,
-	)
+	domain := config.AppConfig.CookieDomain
+
+	if domain == "localhost" {
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("accessToken", "", -1, "/", domain, false, true)
+	} else {
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("accessToken", "", -1, "/", domain, true, true)
+	}
 }
