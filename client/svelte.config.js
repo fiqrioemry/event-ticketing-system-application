@@ -7,8 +7,11 @@ const config = {
 
 	kit: {
 		adapter: adapter({
-			edge: false,
-			split: false
+			pages: 'build',
+			assets: 'build',
+			fallback: 'index.html',
+			precompress: false,
+			strict: false
 		})
 	}
 };
