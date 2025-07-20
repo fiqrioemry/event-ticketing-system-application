@@ -20,7 +20,8 @@ export async function load({ cookies, fetch, url }) {
 			credentials: 'include',
 			headers: {
 				'X-API-KEY': API_KEY,
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				Cookie: `refreshToken=${refreshToken}`
 			}
 		});
 
