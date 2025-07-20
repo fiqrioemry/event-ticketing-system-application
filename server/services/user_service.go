@@ -38,9 +38,9 @@ func (s *userService) GetUserProfile(userID string) (*dto.ProfileResponse, error
 		Email:    user.Email,
 		Fullname: user.Fullname,
 		Avatar:   user.Avatar,
+		Role:     user.Role,
 		Balance:  user.Balance,
 		JoinedAt: user.CreatedAt,
-		Role:     user.Role,
 	}
 	return profile, nil
 }

@@ -219,6 +219,7 @@ func (s *authService) VerifyOTP(email, otp string) (*dto.AuthResponse, error) {
 		Email:    email,
 		Fullname: fullname,
 		Password: password,
+		Role:     "user", // Default role for new users
 		Avatar:   utils.RandomUserAvatar(fullname),
 	}
 
@@ -249,6 +250,7 @@ func (s *authService) VerifyOTP(email, otp string) (*dto.AuthResponse, error) {
 		Email:    user.Email,
 		Fullname: user.Fullname,
 		Avatar:   user.Avatar,
+		Role:     user.Role,
 	}
 
 	return &dto.AuthResponse{
@@ -317,7 +319,10 @@ func (s *authService) RefreshToken(c *gin.Context, refreshToken string) (*dto.Pr
 		ID:       user.ID.String(),
 		Email:    user.Email,
 		Fullname: user.Fullname,
+		Balance:  user.Balance,
+		JoinedAt: user.CreatedAt,
 		Avatar:   user.Avatar,
+		Role:     user.Role,
 	}
 
 	accessToken, err := utils.GenerateAccessToken(user.ID.String(), user.Role)
@@ -504,6 +509,7 @@ func (s *authService) GoogleSignIn(tokenId string) (*dto.AuthResponse, error) {
 			Email:    email,
 			Avatar:   utils.RandomUserAvatar(name),
 			Fullname: name,
+			Role:     "user",
 			Password: "-", // placeholder karena pakai OAuth
 		}
 

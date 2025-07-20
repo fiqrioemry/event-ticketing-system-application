@@ -121,7 +121,7 @@ func SetRefreshTokenCookie(c *gin.Context, refreshToken string) {
 		c.SetSameSite(http.SameSiteLaxMode) // Gunakan Lax untuk localhost
 		c.SetCookie("refreshToken", refreshToken, 7*24*3600, "/", domain, false, true)
 	} else {
-		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetSameSite(http.SameSiteNoneMode)
 		c.SetCookie("refreshToken", refreshToken, 7*24*3600, "/", domain, true, true)
 	}
 }
@@ -133,7 +133,7 @@ func SetAccessTokenCookie(c *gin.Context, accessToken string) {
 		c.SetSameSite(http.SameSiteLaxMode)
 		c.SetCookie("accessToken", accessToken, 3600, "/", domain, false, true)
 	} else {
-		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetSameSite(http.SameSiteNoneMode)
 		c.SetCookie("accessToken", accessToken, 3600, "/", domain, true, true)
 	}
 }
@@ -145,7 +145,7 @@ func ClearRefreshTokenCookie(c *gin.Context) {
 		c.SetSameSite(http.SameSiteLaxMode)
 		c.SetCookie("refreshToken", "", -1, "/", domain, false, true)
 	} else {
-		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetSameSite(http.SameSiteNoneMode)
 		c.SetCookie("refreshToken", "", -1, "/", domain, true, true)
 	}
 }
@@ -157,7 +157,7 @@ func ClearAccessTokenCookie(c *gin.Context) {
 		c.SetSameSite(http.SameSiteLaxMode)
 		c.SetCookie("accessToken", "", -1, "/", domain, false, true)
 	} else {
-		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetSameSite(http.SameSiteNoneMode)
 		c.SetCookie("accessToken", "", -1, "/", domain, true, true)
 	}
 }
