@@ -35,4 +35,5 @@ export async function load({ cookies, fetch, url }) {
 	}
 }
 
+export let prerender = false;
 export let ssr = true;

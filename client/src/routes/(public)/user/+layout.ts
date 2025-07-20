@@ -9,3 +9,5 @@ export async function load({ parent }: any) {
 
 	return { user };
 }
+
+export const prerender = false;

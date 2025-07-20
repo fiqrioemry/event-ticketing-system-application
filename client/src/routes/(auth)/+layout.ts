@@ -13,3 +13,5 @@ export async function load({ parent }: any) {
 
 // the ssr set to be false because no content is rendered on this page
 // for fast redirects and to avoid unnecessary server-side rendering
+
+export const prerender = false;

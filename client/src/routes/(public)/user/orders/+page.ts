@@ -27,3 +27,4 @@ export async function load({ url }) {
 }
 
 export const ssr = true;
+export const prerender = false;
