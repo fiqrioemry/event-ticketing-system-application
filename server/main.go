@@ -43,7 +43,7 @@ func main() {
 	// ========== initialisasi layer ============
 	repo := repositories.InitRepositories(db)
 	s := services.InitServices(repo)
-	h := handlers.InitHandlers(s)
+	h := handlers.InitHandlers(s, repo)
 
 	cronManager := cron.NewCronManager(s.PaymentService)
 	cronManager.RegisterJobs()

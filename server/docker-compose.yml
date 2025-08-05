@@ -8,8 +8,12 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    ports:
+      - "5004:5004"
     expose:
       - "5004"
+    volumes:
+      - .:/app
     healthcheck:
       test:
         ["CMD-SHELL", "wget -q --spider http://localhost:5004/health || exit 1"]
@@ -17,12 +21,12 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.tiketku.rule=Host(`tiketku-api.ahmadfiqrioemry.com`)"
-      - "traefik.http.services.tiketku.loadbalancer.server.port=5004"
-      - "traefik.http.routers.tiketku.entrypoints=websecure"
-      - "traefik.http.routers.tiketku.tls.certresolver=letsencrypt"
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.tiketku.rule=Host(`tiketku-api.ahmadfiqrioemry.com`)"
+    #   - "traefik.http.services.tiketku.loadbalancer.server.port=5004"
+    #   - "traefik.http.routers.tiketku.entrypoints=websecure"
+    #   - "traefik.http.routers.tiketku.tls.certresolver=letsencrypt"
     networks:
       - shared-net
 

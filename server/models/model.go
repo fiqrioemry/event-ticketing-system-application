@@ -42,7 +42,7 @@ type Event struct {
 	Date        time.Time `gorm:"not null" json:"date"`
 	StartTime   int       `gorm:"not null" json:"startTime"`
 	EndTime     int       `gorm:"not null" json:"endTime"`
-	Status      string    `gorm:"type:enum('active','ongoing','done','cancelled');default:'active'"`
+	Status      string    `gorm:"type:enum('inactive','active','ongoing','done','cancelled');default:'inactive'" json:"status"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 
@@ -139,6 +139,18 @@ type WithdrawalRequest struct {
 	ApprovedAt *time.Time
 
 	User User `gorm:"foreignKey:UserID"`
+}
+
+type AuditLog struct {
+	ID          string         `gorm:"primaryKey;type:char(36)" json:"id"`
+	UserID      string         `gorm:"type:char(36);index" json:"user_id"`
+	Action      string         `gorm:"type:varchar(50);not null" json:"action"`
+	Resource    string         `gorm:"type:varchar(100);not null" json:"resource"`
+	Description string         `gorm:"type:text" json:"description"`
+	IP          string         `gorm:"type:varchar(45)" json:"ip"`
+	UserAgent   string         `gorm:"type:varchar(255)" json:"user_agent"`
+	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) (err error) {

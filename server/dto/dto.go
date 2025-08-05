@@ -52,7 +52,7 @@ type UpdateProfileRequest struct {
 }
 
 type UserQueryParams struct {
-	Q     string `form:"q"`
+	Q     string `form:"search"`
 	Role  string `form:"role"`
 	Sort  string `form:"sort"`
 	Page  int    `form:"page,default=1"`
@@ -145,13 +145,13 @@ type EventDetailResponse struct {
 }
 
 type UpdateEventRequest struct {
-	Title       string    `form:"title" binding:"required,min=5,max=150"`
-	Description string    `form:"description" binding:"required"`
-	Location    string    `form:"location" binding:"required"`
-	Date        time.Time `form:"date" binding:"required"`
-	StartTime   int       `form:"startTime" binding:"required,min=0,max=23"`
-	EndTime     int       `form:"endTime" binding:"required,min=1,max=24"`
-	Status      string    `form:"status" binding:"required,oneof=active ongoing done cancelled"`
+	Title       string `form:"title" binding:"required,min=5,max=150"`
+	Description string `form:"description" binding:"required"`
+	Location    string `form:"location" binding:"required"`
+	Date        string `form:"date" binding:"required"`
+	StartTime   int    `form:"startTime" binding:"required,min=0,max=23"`
+	EndTime     int    `form:"endTime" binding:"required,min=1,max=24"`
+	Status      string `form:"status" binding:"required,oneof=active ongoing done cancelled"`
 
 	Image    *multipart.FileHeader `form:"image"`
 	ImageURL string                `form:"-"`
@@ -166,15 +166,11 @@ type CreateEventRequest struct {
 	Title       string                `form:"title" binding:"required,min=5,max=150"`
 	Description string                `form:"description" binding:"required"`
 	Location    string                `form:"location" binding:"required"`
-	Date        time.Time             `form:"date" binding:"required"`
+	Date        string                `form:"date" binding:"required"`
 	StartTime   int                   `form:"startTime" binding:"required,min=0,max=23"`
 	EndTime     int                   `form:"endTime" binding:"required,min=1,max=24"`
-	Status      string                `form:"status" binding:"required,oneof=active ongoing done cancelled"`
-	Tickets     []CreateTicketRequest `form:"tickets" binding:"required,min=1,dive"`
-
-	// For file upload (tidak di-unmarshal dari JSON)
-	Image    *multipart.FileHeader `form:"image" binding:"required"`
-	ImageURL string                `form:"-"`
+	Image       *multipart.FileHeader `form:"image" binding:"required"`
+	ImageURL    string                `form:"-"`
 }
 
 type CreateTicketRequest struct {
@@ -188,14 +184,15 @@ type CreateTicketRequest struct {
 
 // 3. TICKET  MODULE MANAGEMENT =============
 type TicketResponse struct {
-	ID         string  `json:"id"`
-	EventID    string  `json:"eventId"`
-	Name       string  `json:"name"`
-	Price      float64 `json:"price"`
-	Quota      int     `json:"quota"`
-	Limit      int     `json:"limit"`
-	Sold       int     `json:"sold"`
-	Refundable bool    `json:"isRefundable"`
+	ID            string  `json:"id"`
+	EventID       string  `json:"eventId"`
+	Name          string  `json:"name"`
+	Price         float64 `json:"price"`
+	Quota         int     `json:"quota"`
+	Limit         int     `json:"limit"`
+	Sold          int     `json:"sold"`
+	RefundPercent int     `json:"refundPercent"`
+	Refundable    bool    `json:"isRefundable"`
 }
 
 type TicketQueryParams struct {
@@ -312,16 +309,6 @@ type WithdrawalResponse struct {
 }
 
 // 8. REPORT MODULE MANAGEMENT =============
-
-type SummaryReportResponse struct {
-	TotalRevenue    float64 `json:"totalRevenue"`
-	TotalOrders     int64   `json:"totalOrders"`
-	TotalTicketSold int64   `json:"totalTicketSold"`
-	TotalRefund     float64 `json:"totalRefund"`
-	TotalUsers      int64   `json:"totalUsers"`
-	TotalEvents     int64   `json:"totalEvents"`
-}
-
 type OrderReportQueryParams struct {
 	Q        string `form:"search"`
 	Page     int    `form:"page,default=1"`
@@ -424,4 +411,71 @@ type PaginationResponse struct {
 	Limit      int `json:"limit"`
 	TotalRows  int `json:"totalRows"`
 	TotalPages int `json:"totalPages"`
+}
+
+// 9. REPORT MODULE MANAGEMENT =============
+type SummaryReportResponse struct {
+	Users       UsersSummary       `json:"users"`
+	Events      EventsSummary      `json:"events"`
+	Orders      OrdersSummary      `json:"orders"`
+	Revenue     RevenueSummary     `json:"revenue"`
+	Withdrawals WithdrawalsSummary `json:"withdrawals"`
+}
+
+type UsersSummary struct {
+	Total        int `json:"total"`
+	NewThisMonth int `json:"newThisMonth"`
+	ActiveUsers  int `json:"activeUsers"`
+}
+
+type EventsSummary struct {
+	Total     int `json:"total"`
+	Active    int `json:"active"`
+	Ongoing   int `json:"ongoing"`
+	Done      int `json:"done"`
+	Cancelled int `json:"cancelled"`
+}
+
+type OrdersSummary struct {
+	Total     int `json:"total"`
+	Pending   int `json:"pending"`
+	Paid      int `json:"paid"`
+	Failed    int `json:"failed"`
+	Cancelled int `json:"cancelled"`
+}
+
+type RevenueSummary struct {
+	TotalRevenue    float64 `json:"totalRevenue"`
+	ThisMonth       float64 `json:"thisMonth"`
+	PendingPayments float64 `json:"pendingPayments"`
+}
+
+type WithdrawalsSummary struct {
+	Pending     int     `json:"pending"`
+	TotalAmount float64 `json:"totalAmount"`
+}
+
+type AdminEventResponse struct {
+	ID          string    `json:"id"`
+	Image       string    `json:"image"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Location    string    `json:"location"`
+	StartPrice  float64   `json:"start_price"`
+	IsAvailable bool      `json:"is_available"`
+	StartTime   int       `json:"start_time"`
+	EndTime     int       `json:"end_time"`
+	Status      string    `json:"status"`
+	Date        time.Time `json:"date"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+
+	// Admin-specific fields
+	TicketCount          int              `json:"ticketCount"`
+	TotalQuota           int              `json:"totalQuota"`
+	TotalSold            int              `json:"totalSold"`
+	Revenue              float64          `json:"revenue"`
+	RemainingQuota       int              `json:"remainingQuota"`
+	CompletionPercentage float64          `json:"completionPercentage"`
+	Tickets              []TicketResponse `json:"tickets,omitempty"`
 }

@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
-
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
 	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
@@ -12,15 +11,15 @@ import (
 	"github.com/fiqrioemry/go-api-toolkit/pagination"
 	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator"
 )
 
 type EventHandler struct {
-	service services.EventService
+	service    services.EventService
+	repository repositories.AuditLogRepository
 }
 
-func NewEventHandler(service services.EventService) *EventHandler {
-	return &EventHandler{service}
+func NewEventHandler(service services.EventService, repository repositories.AuditLogRepository) *EventHandler {
+	return &EventHandler{service, repository}
 }
 
 func (h *EventHandler) GetAllEvents(c *gin.Context) {
@@ -61,101 +60,42 @@ func (h *EventHandler) GetEventByID(c *gin.Context) {
 	response.OK(c, "Event retrieved successfully", data)
 }
 
-func buildValidationError(err error) *response.AppError {
-	validationErr := response.NewBadRequest("Validation failed")
-	validationErr.WithContext("details", err.Error())
-	return validationErr
-}
-
 func (h *EventHandler) CreateEvent(c *gin.Context) {
-	// extract form image
-	image, err := c.FormFile("image")
-	if err != nil {
-		response.Error(c, response.BadRequest("Event image is required"))
-		return
-	}
-
-	// extract form data
-	dataStr := c.PostForm("data")
-	if dataStr == "" {
-		response.Error(c, response.BadRequest("Event data is required"))
-		return
-	}
-
-	// parse JSON data
 	var req dto.CreateEventRequest
-	if err := json.Unmarshal([]byte(dataStr), &req); err != nil {
-		response.Error(c, response.BadRequest("Invalid JSON data format: "+err.Error()))
+
+	if !utils.BindAndValidateForm(c, &req) {
 		return
 	}
 
-	req.Image = image
-
-	// validate request struct
-	validate := validator.New()
-	if err := validate.Struct(req); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			validationErr := buildValidationError(validationErrors)
-			response.Error(c, validationErr)
-			return
-		}
-		response.Error(c, response.NewBadRequest("Validation failed: "+err.Error()))
-		return
-	}
-
-	// upload image file
 	imageURL, err := utils.UploadImageWithValidation(req.Image)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
+
 	req.ImageURL = imageURL
 
 	// create event record
 	createdEvent, err := h.service.CreateEvent(&req)
 	if err != nil {
-		// cleanup failed upload
 		utils.CleanupImageOnError(imageURL)
 		response.Error(c, err)
 		return
 	}
 
+	// record audit log
+	auditLog := utils.BuildAuditLog(c, utils.MustGetUserID(c), "create", "event", req)
+
+	go h.repository.Create(c.Request.Context(), auditLog)
+
 	response.Created(c, "Event and tickets created successfully", createdEvent)
 }
 
 func (h *EventHandler) UpdateEventByID(c *gin.Context) {
-	// extract event ID
-	id := c.Param("id")
-
-	// extract form data
-	dataStr := c.PostForm("data")
-	if dataStr == "" {
-		response.Error(c, response.NewBadRequest("Event data is required"))
-		return
-	}
-
-	// parse JSON data
+	eventID := c.Param("id")
 	var req dto.UpdateEventRequest
-	if err := json.Unmarshal([]byte(dataStr), &req); err != nil {
-		response.Error(c, response.NewBadRequest("Invalid JSON data format: "+err.Error()))
-		return
-	}
 
-	// check optional image
-	image, err := c.FormFile("image")
-	if err == nil && image != nil && image.Filename != "" {
-		req.Image = image
-	}
-
-	// validate request struct
-	validate := validator.New()
-	if err := validate.Struct(req); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			validationErr := buildValidationError(validationErrors)
-			response.Error(c, validationErr)
-			return
-		}
-		response.Error(c, response.NewBadRequest("Validation failed: "+err.Error()))
+	if !utils.BindAndValidateForm(c, &req) {
 		return
 	}
 
@@ -170,15 +110,19 @@ func (h *EventHandler) UpdateEventByID(c *gin.Context) {
 	}
 
 	// update event record
-	updatedEvent, err := h.service.UpdateEvent(id, &req)
+	updatedEvent, err := h.service.UpdateEvent(eventID, &req)
 	if err != nil {
-		// cleanup failed upload
 		if req.ImageURL != "" {
 			utils.CleanupImageOnError(req.ImageURL)
 		}
 		response.Error(c, err)
 		return
 	}
+
+	// record audit log
+	auditLog := utils.BuildAuditLog(c, utils.MustGetUserID(c), "update", "event", req)
+
+	go h.repository.Create(c.Request.Context(), auditLog)
 
 	response.OK(c, "Event updated successfully", updatedEvent)
 }
@@ -193,17 +137,23 @@ func (h *EventHandler) GetTicketsByEventID(c *gin.Context) {
 		response.Error(c, err)
 		return
 	}
+
 	response.OK(c, "Tickets retrieved successfully", tickets)
 }
 
 func (h *EventHandler) DeleteEventByID(c *gin.Context) {
-	// extract event ID
 	eventID := c.Param("id")
+
 	// delete event record
 	if err := h.service.DeleteEventByID(eventID); err != nil {
 		response.Error(c, err)
 		return
 	}
+
+	// record audit log
+	auditLog := utils.BuildAuditLog(c, utils.MustGetUserID(c), "delete", "event", eventID)
+
+	go h.repository.Create(c.Request.Context(), auditLog)
 
 	response.OK(c, "Event deleted successfully", eventID)
 }

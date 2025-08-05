@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
 )
 
@@ -13,19 +14,19 @@ type Handlers struct {
 	UserTicketHandler *UserTicketHandler
 	WithdrawalHandler *WithdrawalHandler
 	PaymentHandler    *PaymentHandler
-	ReportHandler     *ReportHandler
+	AdminHandler      *AdminHandler
 }
 
-func InitHandlers(s *services.Services) *Handlers {
+func InitHandlers(s *services.Services, r *repositories.Repositories) *Handlers {
 	return &Handlers{
 		AuthHandler:       NewAuthHandler(s.AuthService),
-		UserHandler:       NewUserHandler(s.UserService),
-		EventHandler:      NewEventHandler(s.EventService),
-		TicketHandler:     NewTicketHandler(s.TicketService),
 		OrderHandler:      NewOrderHandler(s.OrderService),
 		UserTicketHandler: NewUserTicketHandler(s.UserTicketService),
-		WithdrawalHandler: NewWithdrawalHandler(s.WithdrawalService),
+		UserHandler:       NewUserHandler(s.UserService, r.AuditRepository),
+		EventHandler:      NewEventHandler(s.EventService, r.AuditRepository),
+		TicketHandler:     NewTicketHandler(s.TicketService, r.AuditRepository),
+		WithdrawalHandler: NewWithdrawalHandler(s.WithdrawalService, r.AuditRepository),
 		PaymentHandler:    NewPaymentHandler(s.PaymentService),
-		ReportHandler:     NewReportHandler(s.ReportService),
+		AdminHandler:      NewAdminHandler(s.AdminService),
 	}
 }

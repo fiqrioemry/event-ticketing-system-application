@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 	"github.com/fiqrioemry/go-api-toolkit/response"
@@ -9,11 +10,12 @@ import (
 )
 
 type WithdrawalHandler struct {
-	service services.WithdrawalService
+	service    services.WithdrawalService
+	repository repositories.AuditLogRepository
 }
 
-func NewWithdrawalHandler(service services.WithdrawalService) *WithdrawalHandler {
-	return &WithdrawalHandler{service}
+func NewWithdrawalHandler(service services.WithdrawalService, repository repositories.AuditLogRepository) *WithdrawalHandler {
+	return &WithdrawalHandler{service, repository}
 }
 
 func (h *WithdrawalHandler) CreateWithdrawal(c *gin.Context) {
@@ -56,5 +58,10 @@ func (h *WithdrawalHandler) ReviewWithdrawal(c *gin.Context) {
 		response.Error(c, err)
 		return
 	}
+
+	auditLog := utils.BuildAuditLog(c, adminID, "review", "withdrawal", res)
+
+	go h.repository.Create(c.Request.Context(), auditLog)
+
 	response.OK(c, "Withdrawal reviewed successfully", res)
 }

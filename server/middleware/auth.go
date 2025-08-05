@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"slices"
 
 	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
@@ -25,7 +26,7 @@ func AuthRequired() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
+		log.Println("Authenticated user:", claims.UserID, "Role:", claims.Role)
 		c.Set("role", claims.Role)
 		c.Set("userID", claims.UserID)
 

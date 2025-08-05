@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"slices"
 	"strings"
 
@@ -13,11 +14,15 @@ import (
 func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
+		path := c.Request.URL.Path
+
 		var allowedOrigin string
 
 		if config.AppConfig.AppEnv == "production" {
 			allowedOrigin = getProductionOrigin(origin)
+			log.Printf("🔍 Production - Allowed Origin: '%s'", allowedOrigin)
 			if origin != "" && allowedOrigin == "" {
+
 				err := response.NewForbidden("Origin not allowed by CORS policy")
 				response.Error(c, err)
 				return
@@ -29,10 +34,12 @@ func CORS() gin.HandlerFunc {
 		// Set CORS headers
 		c.Writer.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Accept, Origin, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
 
 		if c.Request.Method == "OPTIONS" {
+			log.Printf("⚠️  OPTIONS request handled for: %s", path)
 			c.AbortWithStatus(204)
 			return
 		}

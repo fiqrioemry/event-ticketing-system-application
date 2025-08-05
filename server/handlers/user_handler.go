@@ -1,26 +1,24 @@
 package handlers
 
 import (
-	"fmt"
-	"log"
-
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
 	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
 
 	"github.com/fiqrioemry/event_ticketing_system_app/server/services"
 
-	"github.com/fiqrioemry/go-api-toolkit/pagination"
 	"github.com/fiqrioemry/go-api-toolkit/response"
 	"github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
-	service services.UserService
+	service    services.UserService
+	repository repositories.AuditLogRepository
 }
 
-func NewUserHandler(service services.UserService) *UserHandler {
-	return &UserHandler{service}
+func NewUserHandler(service services.UserService, repository repositories.AuditLogRepository) *UserHandler {
+	return &UserHandler{service, repository}
 }
 
 func (h *UserHandler) GetMyProfile(c *gin.Context) {
@@ -43,8 +41,6 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	log.Println("Updating profile for user:", req.Avatar)
-	fmt.Println("Updating profile for user:", req.Avatar)
 	if req.Avatar != nil && req.Avatar.Filename != "" {
 		imageURL, err := utils.UploadImageWithValidation(req.Avatar)
 		if err != nil {
@@ -60,41 +56,13 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		response.Error(c, err)
 		return
 	}
+
+	// record audit log
+	auditLog := utils.BuildAuditLog(c, userID, "update", "profile", updatedProfile)
+
+	go h.repository.Create(c.Request.Context(), auditLog)
+
 	response.OK(c, "Profile updated successfully", updatedProfile)
-}
-
-func (h *UserHandler) GetAllUsers(c *gin.Context) {
-	var params dto.UserQueryParams
-	if !utils.BindAndValidateForm(c, &params) {
-		return
-	}
-
-	if err := pagination.BindAndSetDefaults(c, &params); err != nil {
-		response.Error(c, response.BadRequest(err.Error()))
-		return
-	}
-
-	users, total, err := h.service.GetAllUsers(params)
-	if err != nil {
-		response.Error(c, err)
-		return
-	}
-
-	pagination := pagination.Build(params.Page, params.Limit, total)
-
-	response.OKWithPagination(c, "Users retrieved successfully", users, pagination)
-}
-
-func (h *UserHandler) GetUserDetail(c *gin.Context) {
-	id := c.Param("id")
-	user, err := h.service.GetUserDetail(id)
-
-	if err != nil {
-		response.Error(c, err)
-		return
-	}
-
-	response.OK(c, "User details retrieved successfully", user)
 }
 
 func (h *UserHandler) ChangePassword(c *gin.Context) {

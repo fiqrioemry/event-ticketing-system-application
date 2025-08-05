@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/fiqrioemry/event_ticketing_system_app/server/repositories"
 	"github.com/fiqrioemry/event_ticketing_system_app/server/utils"
 
 	"github.com/fiqrioemry/event_ticketing_system_app/server/dto"
@@ -12,11 +13,12 @@ import (
 )
 
 type TicketHandler struct {
-	service services.TicketService
+	service    services.TicketService
+	repository repositories.AuditLogRepository
 }
 
-func NewTicketHandler(service services.TicketService) *TicketHandler {
-	return &TicketHandler{service}
+func NewTicketHandler(service services.TicketService, repository repositories.AuditLogRepository) *TicketHandler {
+	return &TicketHandler{service, repository}
 }
 
 func (h *TicketHandler) CreateTicket(c *gin.Context) {
@@ -37,6 +39,10 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 		return
 	}
 
+	// record audit log
+	auditLog := utils.BuildAuditLog(c, utils.MustGetUserID(c), "create", "ticket", newTicket)
+	go h.repository.Create(c.Request.Context(), auditLog)
+
 	response.Created(c, "Ticket created successfully", newTicket)
 }
 
@@ -53,6 +59,10 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 		response.Error(c, err)
 		return
 	}
+
+	// record audit log
+	auditLog := utils.BuildAuditLog(c, utils.MustGetUserID(c), "update", "ticket", updatedTicket)
+	go h.repository.Create(c.Request.Context(), auditLog)
 
 	response.OK(c, "Ticket updated successfully", updatedTicket)
 }
@@ -76,6 +86,10 @@ func (h *TicketHandler) DeleteTicket(c *gin.Context) {
 		response.Error(c, err)
 		return
 	}
+
+	// record audit log
+	auditLog := utils.BuildAuditLog(c, utils.MustGetUserID(c), "delete", "ticket", ticketID)
+	go h.repository.Create(c.Request.Context(), auditLog)
 
 	response.OK(c, "Ticket deleted successfully", ticketID)
 
