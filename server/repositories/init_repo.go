@@ -13,7 +13,8 @@ type Repositories struct {
 	OrderRepository      OrderRepository
 	WithdrawalRepository WithdrawalRepository
 	PaymentRepository    PaymentRepository
-	ReportRepository     ReportRepository
+	AdminRepository      AdminRepository
+	AuditRepository      AuditLogRepository
 }
 
 func InitRepositories(db *gorm.DB) *Repositories {
@@ -26,6 +27,7 @@ func InitRepositories(db *gorm.DB) *Repositories {
 		OrderRepository:      NewOrderRepository(db),
 		WithdrawalRepository: NewWithdrawalRepository(db),
 		PaymentRepository:    NewPaymentRepository(db),
-		ReportRepository:     NewReportRepository(db),
+		AdminRepository:      NewAdminRepository(db),
+		AuditRepository:      NewAuditLogRepository(db),
 	}
 }

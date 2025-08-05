@@ -13,6 +13,7 @@ type TicketRepository interface {
 	GetTicketByID(ID string) (*models.Ticket, error)
 	GetTicketByEventID(eventID string) (*models.Ticket, error)
 	GetAllTicketsByEventID(eventID string) ([]*models.Ticket, error)
+	CreateTicketWithEventStatusUpdate(ticket *models.Ticket, eventID string) error
 }
 
 type ticketRepository struct {
@@ -51,4 +52,28 @@ func (r *ticketRepository) GetAllTicketsByEventID(eventID string) ([]*models.Tic
 	var tickets []*models.Ticket
 	err := r.db.Where("event_id = ?", eventID).Find(&tickets).Error
 	return tickets, err
+}
+
+func (r *ticketRepository) CreateTicketWithEventStatusUpdate(ticket *models.Ticket, eventID string) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Buat tiket
+		if err := tx.Create(ticket).Error; err != nil {
+			return err
+		}
+
+		// Cek status event saat ini
+		var currentStatus string
+		if err := tx.Model(&models.Event{}).Where("id = ?", eventID).Select("status").Scan(&currentStatus).Error; err != nil {
+			return err
+		}
+
+		// Update status menjadi active jika statusnya inactive
+		if currentStatus == "inactive" {
+			if err := tx.Model(&models.Event{}).Where("id = ?", eventID).Update("status", "active").Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
