@@ -8,10 +8,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/fiqrioemry/event_ticketing_system_app/server/config"
 
@@ -185,33 +182,4 @@ func CleanupImagesOnError(imageURLs []string) {
 			_ = DeleteFromCloudinary(url)
 		}
 	}
-}
-
-func UploadToLocal(file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
-	uploadPath := "./uploads/"
-	err := os.MkdirAll(uploadPath, os.ModePerm)
-	if err != nil {
-		return "", err
-	}
-
-	filename := fmt.Sprintf("%d_%s", time.Now().UnixNano(), fileHeader.Filename)
-	filePath := filepath.Join(uploadPath, filename)
-
-	out, err := os.Create(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer out.Close()
-
-	_, err = file.Seek(0, 0)
-	if err != nil {
-		return "", err
-	}
-
-	_, err = out.ReadFrom(file)
-	if err != nil {
-		return "", err
-	}
-
-	return filePath, nil
 }

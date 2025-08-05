@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/fiqrioemry/go-api-toolkit/response"
 
@@ -46,9 +47,6 @@ func BindAndValidateJSON[T any](c *gin.Context, req *T) bool {
 // Enhanced BindAndValidateForm with better error logging
 func BindAndValidateForm[T any](c *gin.Context, req *T) bool {
 	if err := c.ShouldBind(req); err != nil {
-		// Debug: Log the raw error
-		log.Printf("Bind error: %v", err)
-		log.Printf("Request content type: %s", c.GetHeader("Content-Type"))
 
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			log.Printf("Validation errors: %+v", validationErrors)
@@ -56,10 +54,6 @@ func BindAndValidateForm[T any](c *gin.Context, req *T) bool {
 			response.Error(c, validationErr)
 			return false
 		}
-
-		// Log the specific binding error
-		log.Printf("Form binding failed: %v", err)
-		// ✅ FIXED: Use response package instead of errors package
 		formErr := response.NewBadRequest(fmt.Sprintf("Invalid form data format: %v", err))
 		response.Error(c, formErr)
 		return false
@@ -67,7 +61,6 @@ func BindAndValidateForm[T any](c *gin.Context, req *T) bool {
 	return true
 }
 
-// ✅ FIXED: Use response.AppError instead of errors.AppError
 func buildValidationError(validationErrors validator.ValidationErrors) *response.AppError {
 	errorDetails := make(map[string]any)
 
@@ -100,11 +93,21 @@ func buildValidationError(validationErrors validator.ValidationErrors) *response
 		}
 	}
 
-	// ✅ FIXED: Use response package and proper return
 	return response.NewBadRequest("Validation failed").WithContext("errors", errorDetails)
 }
 
 func ValidateStruct(s any) error {
 	validate := validator.New()
 	return validate.Struct(s)
+}
+
+func ParseDate(dateStr string) (time.Time, error) {
+	if t, err := time.Parse("2006-01-02", dateStr); err == nil {
+		return t.UTC(), nil
+	}
+	if t, err := time.Parse(time.RFC3339, dateStr); err == nil {
+		return t.UTC(), nil
+	}
+
+	return time.Time{}, fmt.Errorf("invalid date, format must be YYYY-MM-DD or ISO 8601")
 }
