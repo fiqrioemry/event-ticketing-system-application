@@ -28,7 +28,7 @@ func InitRoutes(r *gin.Engine, h *handlers.Handlers) {
 	EventRoutes(api, h.EventHandler)
 	PaymentRoutes(api, h.PaymentHandler)
 	TicketRoutes(api, h.TicketHandler)
-	ReportRoutes(api, h.ReportHandler)
+	AdminRoutes(api, h.AdminHandler)
 	WithdrawalRoutes(api, h.WithdrawalHandler)
 	UserTicketRoutes(api, h.UserTicketHandler)
 

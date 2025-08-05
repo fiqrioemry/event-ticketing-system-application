@@ -13,7 +13,7 @@ type Services struct {
 	PaymentService    PaymentService
 	UserTicketService UserTicketService
 	WithdrawalService WithdrawalService
-	ReportService     ReportService
+	AdminService      AdminService
 }
 
 func InitServices(r *repositories.Repositories) *Services {
@@ -26,6 +26,6 @@ func InitServices(r *repositories.Repositories) *Services {
 		PaymentService:    NewPaymentService(r.PaymentRepository, r.OrderRepository, r.TicketRepository, r.UserTicketRepository),
 		UserTicketService: NewUserTicketService(r.UserTicketRepository),
 		WithdrawalService: NewWithdrawalService(r.WithdrawalRepository),
-		ReportService:     NewReportService(r.ReportRepository),
+		AdminService:      NewAdminService(r.AdminRepository),
 	}
 }

@@ -11,12 +11,8 @@ import (
 
 type UserService interface {
 	GetUserProfile(userID string) (*dto.ProfileResponse, error)
-	GetUserDetail(id string) (*dto.UserDetailResponse, error)
-	GetAllUsers(params dto.UserQueryParams) ([]dto.UserListResponse, int, error)
-	UpdateUserDetail(userID string, req *dto.UpdateProfileRequest) (*models.User, error)
-
-	// change password features
 	ChangePassword(userID string, req *dto.ChangePasswordRequest) error
+	UpdateUserDetail(userID string, req *dto.UpdateProfileRequest) (*models.User, error)
 }
 
 type userService struct {
@@ -62,27 +58,6 @@ func (s *userService) UpdateUserDetail(userID string, req *dto.UpdateProfileRequ
 	}
 
 	return user, nil
-}
-
-func (s *userService) GetAllUsers(params dto.UserQueryParams) ([]dto.UserListResponse, int, error) {
-	users, total, err := s.user.GetAllUsers(params)
-	if err != nil {
-		return nil, 0, response.NewInternalServerError("failed to fetch user list", err)
-	}
-
-	var results []dto.UserListResponse
-	for _, u := range users {
-		results = append(results, dto.UserListResponse{
-			ID:       u.ID.String(),
-			Email:    u.Email,
-			Role:     u.Role,
-			Avatar:   u.Avatar,
-			Fullname: u.Fullname,
-			JoinedAt: u.CreatedAt,
-		})
-	}
-
-	return results, int(total), nil
 }
 
 func (s *userService) GetUserDetail(id string) (*dto.UserDetailResponse, error) {

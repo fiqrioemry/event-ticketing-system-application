@@ -42,11 +42,9 @@ func (s *ticketService) CreateTicket(req dto.CreateTicketRequest, eventID string
 		Price:      req.Price,
 		Limit:      req.Limit,
 		Quota:      req.Quota,
-		Sold:       0,
 		Refundable: req.Refundable,
 	}
-
-	if err := s.repo.CreateTicket(newTicket); err != nil {
+	if err := s.repo.CreateTicketWithEventStatusUpdate(newTicket, eventID); err != nil {
 		return nil, response.NewInternalServerError("failed to create ticket", err)
 	}
 

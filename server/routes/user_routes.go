@@ -8,11 +8,9 @@ import (
 )
 
 func UserRoutes(r *gin.RouterGroup, h *handlers.UserHandler) {
+
 	user := r.Group("/user", middleware.AuthRequired())
-	user.GET("", middleware.RoleOnly("admin"), h.GetAllUsers)
-	user.GET("/:id", middleware.RoleOnly("admin"), h.GetUserDetail)
 	user.GET("/me", h.GetMyProfile)
 	user.PUT("/me", h.UpdateProfile)
 	user.PUT("/change-password", h.ChangePassword)
-
 }
