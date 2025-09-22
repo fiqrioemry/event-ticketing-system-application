@@ -1,4 +1,4 @@
-![thumbnail](./docs/thumbnail.png)
+![thumbnail](./docs/tiketku-thumbnail.png)
 
 # 🎟️ Tiketku – Ticketing System Application
 
